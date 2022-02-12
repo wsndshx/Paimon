@@ -38,7 +38,7 @@ jobs:
     - name: Get artifacts
       uses: actions/download-artifact@master
       with:
-        name: Linux
+        name: Linux-Paimon
         path: Build
     
     - name: Set up QEMU
