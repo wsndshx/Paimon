@@ -38,8 +38,8 @@ jobs:
     - name: Get artifacts
       uses: actions/download-artifact@master
       with:
-        name: Paimon
-        path: ./
+        name: Linux
+        path: /Build
     
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
