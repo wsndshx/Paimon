@@ -36,7 +36,7 @@ jobs:
     needs: build
     steps:
     - name: Create a directory
-      RUN: mkdir /Build
+      run: mkdir /Build
 
     - name: Get artifacts
       uses: actions/download-artifact@master
