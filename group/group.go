@@ -12,9 +12,9 @@ func init() {
 
 func Handle(message string, num int64) {
 	// 匹配早安消息
-	morning := regexp.MustCompile(`^(早安|早上好|早鸭) | (早安|早上好|早鸭)$`)
+	morning := regexp.MustCompile(`^(早安|早上好|早鸭)|(早安|早上好|早鸭)$|早……`)
 	// 匹配晚安消息
-	night := regexp.MustCompile(`^(晚安|我睡了|睡) | (晚安|我睡了)$`)
+	night := regexp.MustCompile(`^(晚安|我睡了|睡)|(晚安|我睡了)`)
 	if morning.MatchString(message) {
 		log.Println("消息`" + message + "`为早安问候")
 		greeting(1, num)
