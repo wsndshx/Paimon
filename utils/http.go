@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 )
@@ -28,6 +29,10 @@ func init() {
 
 // Reply 回复消息
 func (message Reply) Reply() {
+	type reply struct {
+		Message_id int32 `json:"message_id"`
+	}
+	Json := reply{}
 	JsonBody := new(bytes.Buffer)
 	json.NewEncoder(JsonBody).Encode(message)
 
@@ -35,5 +40,8 @@ func (message Reply) Reply() {
 	if err != nil {
 		log.Println(err.Error())
 	}
+	jsonData, _ := io.ReadAll(res.Body)
+	json.Unmarshal(jsonData, &Json)
+	log.Printf("发送消息`%s`成功, 返回消息ID: %d\n", message.Message, Json.Message_id)
 	defer res.Body.Close()
 }
