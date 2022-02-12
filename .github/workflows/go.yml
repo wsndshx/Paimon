@@ -35,6 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: Create a directory
+      RUN: mkdir /Build
+
     - name: Get artifacts
       uses: actions/download-artifact@master
       with:
