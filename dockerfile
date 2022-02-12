@@ -20,5 +20,8 @@ RUN echo 'Asia/Shanghai' >/etc/timezone
 # 设置编码
 ENV LANG C.UTF-8
 
+# 赋予权限
+RUN chmod +x Paimon
+
 # 运行程序
-ENTRYPOINT ["/Paimon"]
+ENTRYPOINT ["./Paimon"]
