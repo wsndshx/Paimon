@@ -1,9 +1,22 @@
 package main
 
 import (
+	"io/ioutil"
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/wsndshx/Paimon/group"
+	"github.com/wsndshx/Paimon/utils"
+	"gopkg.in/yaml.v2"
 )
+
+type Conf struct {
+	Core Core `yaml:"core"`
+}
+type Core struct {
+	Http_post   string `yaml:"http_post"`
+	Cqhttp_host string `yaml:"cqhttp_host"`
+}
 
 type Message struct {
 	Post_type    string `json:"post_type"`
@@ -17,7 +30,28 @@ type Message struct {
 	Font         int32  `json:"font"`
 }
 
+func init() {
+	log.SetPrefix("[Core]")
+	log.SetFlags(0)
+}
+
+func (conf *Conf) getConf() *Conf {
+	yamlFile, err := ioutil.ReadFile("conf.yaml")
+	if err != nil {
+		log.Panicln(err.Error())
+	}
+	err = yaml.Unmarshal(yamlFile, conf)
+	if err != nil {
+		log.Panicln(err.Error())
+	}
+	return conf
+}
+
 func main() {
+	// 读取配置文件
+	var conf Conf
+	conf.getConf()
+	utils.Host = conf.Core.Cqhttp_host
 	// 监听post请求
 	app := gin.Default()
 	app.POST("/", func(c *gin.Context) {
@@ -33,5 +67,5 @@ func main() {
 			group.Handle(message.Raw_message, message.Group_id)
 		}
 	})
-	app.Run(":5800")
+	app.Run(":" + conf.Core.Http_post)
 }
