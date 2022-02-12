@@ -62,8 +62,10 @@ func main() {
 		switch message.Message_type {
 		case "private":
 			// 这里是私聊消息
+			log.Println("接收到私聊消息: " + message.Raw_message)
 		case "group":
 			// 这里是群聊消息
+			log.Println("接收到群组消息: " + message.Raw_message)
 			group.Handle(message.Raw_message, message.Group_id)
 		}
 	})

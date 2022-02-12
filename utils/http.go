@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -20,15 +21,26 @@ type Reply struct {
 	Message      string `json:"message"`
 }
 
+func init() {
+	log.SetPrefix("[HTTP]")
+	log.SetFlags(0)
+}
+
 // Reply 回复消息
 func (message Reply) Reply() {
 	JsonBody := new(bytes.Buffer)
 	json.NewEncoder(JsonBody).Encode(message)
 
-	req, _ := http.NewRequest("POST", Host+"/send_msg", JsonBody)
+	req, err := http.NewRequest("POST", Host+"/send_msg", JsonBody)
+	if err != nil {
+		log.Println(err.Error())
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err.Error())
+	}
 	resp.Body.Close()
 }
