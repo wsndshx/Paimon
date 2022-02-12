@@ -8,7 +8,7 @@ WORKDIR /Neko
 VOLUME ["/Neko/date"]
 
 # 拷贝当前目录下 go_docker_demo1 可以执行文件
-COPY ./Paimon /Neko/Paimon
+COPY /home/runner/work/Paimon/Paimon /Neko/Paimon
 
 # 设置时区为上海
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
