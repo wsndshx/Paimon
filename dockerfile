@@ -23,5 +23,8 @@ ENV LANG C.UTF-8
 # 赋予权限
 RUN chmod +x Paimon
 
+# 安装运行环境
+RUN apk --no-cache add libc6-compat libgcc libstdc++
+
 # 运行程序
 ENTRYPOINT ["./Paimon"]
