@@ -8,7 +8,7 @@ WORKDIR /Neko/data
 VOLUME ["/Neko/data"]
 
 # 拷贝编译出来的可执行执行文件
-COPY /Build/Linux/Paimon /Neko/Paimon
+COPY Build/Linux/Paimon /Neko/Paimon
 
 # 设置时区为上海
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
