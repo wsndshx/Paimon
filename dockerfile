@@ -8,7 +8,7 @@ WORKDIR /Neko
 VOLUME ["/Neko/data"]
 
 # 拷贝编译出来的可执行执行文件
-COPY * ./
+COPY Paimon ./
 
 # 验证文件
 RUN ls -R
