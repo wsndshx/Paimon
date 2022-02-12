@@ -28,7 +28,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Paimon
-        path: ./Paimon
+        path: ./
 
   dockerfile:
     name: Build Image
@@ -39,7 +39,7 @@ jobs:
       uses: actions/download-artifact@master
       with:
         name: Paimon
-        path: ./Paimon
+        path: ./
     
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
