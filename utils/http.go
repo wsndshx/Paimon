@@ -31,16 +31,9 @@ func (message Reply) Reply() {
 	JsonBody := new(bytes.Buffer)
 	json.NewEncoder(JsonBody).Encode(message)
 
-	req, err := http.NewRequest("POST", Host+"/send_msg", JsonBody)
+	res, err := http.Post(Host+"/send_msg", "application/json;charset=utf-8", JsonBody)
 	if err != nil {
 		log.Println(err.Error())
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	resp.Body.Close()
+	defer res.Body.Close()
 }
