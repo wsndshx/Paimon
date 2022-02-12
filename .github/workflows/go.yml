@@ -25,7 +25,8 @@ jobs:
       run: find . -type f -print0 | xargs -0 dos2unix
 
     - name: Build
-      run: go build -v -ldflags '-w -s' -o ./Build/Paimon
+      run: CC=x86_64-linux-musl-gcc CXX=x86_64-linux-musl-g++ go build -v -ldflags '-w -s' -o ./Build/Paimon
+
 
     - name: Test
       run: go test -v ./...
