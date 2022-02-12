@@ -36,7 +36,7 @@ func init() {
 }
 
 func (conf *Conf) getConf() *Conf {
-	yamlFile, err := ioutil.ReadFile("conf.yaml")
+	yamlFile, err := ioutil.ReadFile("data/conf.yaml")
 	if err != nil {
 		log.Panicln(err.Error())
 	}

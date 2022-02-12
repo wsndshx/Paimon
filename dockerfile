@@ -2,13 +2,16 @@
 FROM alpine:latest
 
 # 创建程序工作目录
-WORKDIR /Neko/data
+WORKDIR /Neko
 
 # # 挂载容器目录
-# VOLUME ["/Neko/data"]
+VOLUME ["/Neko/data"]
 
 # 拷贝编译出来的可执行执行文件
-COPY * /Neko
+COPY * ./
+
+# 验证文件
+RUN ls -R
 
 # 设置时区为上海
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
@@ -18,4 +21,4 @@ RUN echo 'Asia/Shanghai' >/etc/timezone
 ENV LANG C.UTF-8
 
 # 运行程序
-ENTRYPOINT ["/Neko/Paimon"]
+ENTRYPOINT ["/Paimon"]
