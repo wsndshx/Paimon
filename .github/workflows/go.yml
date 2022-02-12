@@ -27,7 +27,7 @@ jobs:
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: Linux
+        name: Linux-Paimon
         path: ./Build
 
   dockerfile:
