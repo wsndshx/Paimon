@@ -19,16 +19,16 @@ jobs:
         go-version: 1.17
 
     - name: Build
-      run: go build -v ./...
+      run: go build -v -o ./Build/Paimon
 
     - name: Test
-      run: go test -v ./...
+      run: go test -v -o ./Build/Paimon
       
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
         name: Paimon
-        path: ./
+        path: ./Build
 
   dockerfile:
     name: Build Image
