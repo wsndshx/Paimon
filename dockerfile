@@ -2,13 +2,13 @@
 FROM alpine:latest
 
 # 创建程序工作目录
-WORKDIR /Neko
+WORKDIR /Neko/data
 
 # 挂载容器目录
-VOLUME ["/Neko/date"]
+VOLUME ["/Neko/data"]
 
-# 拷贝当前目录下 go_docker_demo1 可以执行文件
-COPY /home/runner/work/Paimon/Paimon /Neko/Paimon
+# 拷贝编译出来的可执行执行文件
+COPY ./Paimon/Paimon /Neko/Paimon
 
 # 设置时区为上海
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
