@@ -35,12 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - name: Get artifacts
-      uses: actions/download-artifact@master
-      with:
-        name: Linux-Paimon
-        path: Build
-    
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
 
@@ -52,6 +46,14 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Get artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: Linux-Paimon
+    
+    - name: Display structure of downloaded files
+      run: ls -R
 
     - name: Build and push
       uses: docker/build-push-action@v2

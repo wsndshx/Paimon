@@ -4,11 +4,11 @@ FROM alpine:latest
 # 创建程序工作目录
 WORKDIR /Neko/data
 
-# 挂载容器目录
-VOLUME ["/Neko/data"]
+# # 挂载容器目录
+# VOLUME ["/Neko/data"]
 
 # 拷贝编译出来的可执行执行文件
-COPY Build/Linux-Paimon /Neko/Paimon
+COPY Linux-Paimon /Neko/Paimon
 
 # 设置时区为上海
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
