@@ -12,7 +12,26 @@ func init() {
 	log.SetFlags(0)
 }
 
+var ai bool
+
 func Handle(message string, num int64) {
+	if ai {
+		// 匹配被At到的行为: 转Ai
+		at := regexp.MustCompile(`\[CQ:at,qq=3381113848\]`)
+		if at.MatchString(message) {
+			msg := utils.Reply{
+				Message_type: "group",
+				Group_id:     num,
+				Message:      utils.Ai(message),
+			}
+			msg.Reply()
+			return
+		}
+		// 开始内容匹配
+		utils.Ai(message)
+		// 匹配晚安
+
+	}
 	{
 		// 匹配特殊触发
 		msg := utils.Reply{
@@ -32,7 +51,9 @@ func Handle(message string, num int64) {
 			msg.Message = "[诶嘿] 是什么意思啊!"
 		}
 		// 发送特殊触发内容
-		msg.Reply()
+		if msg.Message != "" {
+			msg.Reply()
+		}
 	}
 	// 匹配早安消息
 	morning := regexp.MustCompile(`^早+|蒙早.{0,10}$`)

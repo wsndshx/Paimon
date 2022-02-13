@@ -12,10 +12,15 @@ import (
 
 type Conf struct {
 	Core Core `yaml:"core"`
+	Ai   Ai   `yaml:"ai"`
 }
 type Core struct {
 	Http_post   string `yaml:"http_post"`
 	Cqhttp_host string `yaml:"cqhttp_host"`
+}
+type Ai struct {
+	Enable bool   `yaml:"enable"`
+	Token  string `yaml:"token"`
 }
 
 type Message struct {
@@ -52,6 +57,10 @@ func main() {
 	var conf Conf
 	conf.getConf()
 	utils.Host = conf.Core.Cqhttp_host
+	if conf.Ai.Enable {
+		utils.Ai_token = conf.Ai.Token
+		utils.Ai_init()
+	}
 	// 监听post请求
 	app := gin.Default()
 	app.POST("/", func(c *gin.Context) {
@@ -63,6 +72,9 @@ func main() {
 		case "private":
 			// 这里是私聊消息
 			log.Println("接收到私聊消息: " + message.Raw_message)
+			if conf.Ai.Enable {
+				private(message.Raw_message, message.User_id)
+			}
 		case "group":
 			// 这里是群聊消息
 			log.Println("接收到群组消息: " + message.Raw_message)
