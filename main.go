@@ -63,7 +63,7 @@ func main() {
 		message.Ai = true
 	}
 	gin.SetMode(gin.ReleaseMode)
-	gin.DefaultWriter = ioutil.Discard
+	// gin.DefaultWriter = ioutil.Discard
 	// 监听post请求
 	app := gin.Default()
 	app.POST("/", func(c *gin.Context) {
