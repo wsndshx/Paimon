@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/wsndshx/Paimon/group"
+	"github.com/wsndshx/Paimon/message"
 	"github.com/wsndshx/Paimon/utils"
 	"gopkg.in/yaml.v2"
 )
@@ -60,25 +60,28 @@ func main() {
 	if conf.Ai.Enable {
 		utils.Ai_token = conf.Ai.Token
 		utils.Ai_init()
+		message.Ai = true
 	}
+	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultWriter = ioutil.Discard
 	// 监听post请求
 	app := gin.Default()
 	app.POST("/", func(c *gin.Context) {
 		// 获取接收的消息
-		message := Message{}
-		c.BindJSON(&message)
+		msg := Message{}
+		c.BindJSON(&msg)
 		// 分理消息
-		switch message.Message_type {
+		switch msg.Message_type {
 		case "private":
 			// 这里是私聊消息
-			log.Println("接收到私聊消息: " + message.Raw_message)
+			log.Println("接收到私聊消息: " + msg.Raw_message)
 			if conf.Ai.Enable {
-				private(message.Raw_message, message.User_id)
+				message.Private(msg.Raw_message, msg.User_id)
 			}
 		case "group":
 			// 这里是群聊消息
-			log.Println("接收到群组消息: " + message.Raw_message)
-			group.Handle(message.Raw_message, message.Group_id)
+			log.Println("接收到群组消息: " + msg.Raw_message)
+			message.Handle(msg.Raw_message, msg.Group_id)
 		}
 	})
 	app.Run(":" + conf.Core.Http_post)

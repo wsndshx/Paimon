@@ -1,4 +1,4 @@
-package group
+package message
 
 import (
 	"time"
