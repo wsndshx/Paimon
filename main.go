@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 	"github.com/wsndshx/Paimon/message"
 	"github.com/wsndshx/Paimon/utils"
 	"gopkg.in/yaml.v2"
@@ -64,6 +65,27 @@ func main() {
 	}
 	gin.SetMode(gin.ReleaseMode)
 	// gin.DefaultWriter = ioutil.Discard
+	// 这是一个定时器任务, 临时用用
+	c := cron.New()
+	_, err := c.AddFunc("0 0 22 * * ? ", func() {
+		// 这里执行
+		log.Println("执行定时任务......")
+		// 构建消息体
+		msg := utils.Reply{
+			Message_type: "group",
+			Group_id:     417176143,
+			Message:      "现在已经10点了.....旅行者如果还没背单词的话就赶快去背!",
+		}
+		msg.Reply()
+
+	})
+	if err != nil {
+		log.Panicln("添加定时器任务失败 : %v", err)
+		return
+	}
+	c.Start()
+	defer c.Stop()
+
 	// 监听post请求
 	app := gin.Default()
 	app.POST("/", func(c *gin.Context) {

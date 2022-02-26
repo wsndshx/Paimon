@@ -3,7 +3,9 @@ package message
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"regexp"
+	"time"
 
 	"github.com/wsndshx/Paimon/utils"
 )
@@ -31,6 +33,8 @@ func Handle(message string, num int64) {
 		Message_type: "group",
 		Group_id:     num,
 	}
+	// 设置一个随机数
+	rand.Seed(time.Now().Unix())
 	// Humiliate_key 消息中包含的派蒙的难听绰号
 	Humiliate_key := ""
 	// morning 是否为早安
@@ -116,7 +120,11 @@ func Handle(message string, num int64) {
 		}
 
 		if Praise_key != "" {
-			msg.Message = "嘿嘿嘿"
+			content := []string{
+				"哼哼, 那当然了",
+				"嘿嘿嘿",
+			}
+			msg.Message = content[rand.Intn(len(content))]
 			msg.Reply()
 		}
 	}
