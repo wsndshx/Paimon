@@ -1,13 +1,25 @@
 package utils
 
 import (
+	"log"
 	"regexp"
+	"strconv"
 
 	witai "github.com/wit-ai/wit-go/v2"
 )
 
 var client *witai.Client
 var Ai_token string
+var Intents []string = []string{
+	"null",
+	"Good_morning",
+	"Good_night",
+	"Humiliate",
+	"Praise",
+	"Stating",
+	"Awaken",
+	"Wish",
+}
 
 // Analysis 语句的分析结果
 // Entities 包含的实体
@@ -39,9 +51,12 @@ func Analysis(input string) AnalysisData {
 	}
 
 	// 获取分析结果
-	msg, _ := client.Parse(&witai.MessageRequest{
+	msg, err := client.Parse(&witai.MessageRequest{
 		Query: slices.ChineseWS(),
 	})
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	data := AnalysisData{}
 	// 处理Traits(特征)数据
@@ -57,8 +72,20 @@ func Analysis(input string) AnalysisData {
 			// k 识别到的实体规则名称
 			for _, entity := range v {
 				// Name 实体的名称
-				// Body 识别来源
-				data.Entities[entity.Name] = entity.Body
+				// Body(Value) 识别来源/结果
+				switch entity.Value.(type) {
+				case string:
+					//string类型
+					data.Entities[entity.Name] = entity.Value.(string)
+				case int:
+					//int类型
+					data.Entities[entity.Name] = strconv.Itoa(entity.Value.(int))
+				case float64:
+					data.Entities[entity.Name] = strconv.Itoa(int(entity.Value.(float64)))
+				default:
+					log.Printf("数据 %v 既不是string也不是int类型, 而为 %T", entity.Value, entity.Value)
+				}
+				// data.Entities[entity.Name] = entity.Value
 			}
 		}
 	}
@@ -75,6 +102,7 @@ func Analysis(input string) AnalysisData {
 		"Praise":       4,
 		"Stating":      5,
 		"Awaken":       6,
+		"Wish":         7,
 	}
 	data.Intents = intents[msg.Intents[0].Name]
 	return data

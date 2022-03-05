@@ -8,3 +8,5 @@ require (
 	github.com/wit-ai/wit-go/v2 v2.0.2
 	gopkg.in/yaml.v2 v2.2.8
 )
+
+replace github.com/wit-ai/wit-go/v2 v2.0.2 => github.com/wsndshx/wit-go/v2 v2.0.3

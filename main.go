@@ -67,6 +67,7 @@ func main() {
 	// gin.DefaultWriter = ioutil.Discard
 	// 这是一个定时器任务, 临时用用
 	c := cron.New()
+	
 	_, err := c.AddFunc("0 22 * * ?", func() {
 		// 这里执行
 		log.Println("执行定时任务......")
@@ -77,7 +78,6 @@ func main() {
 			Message:      "现在已经10点了.....旅行者如果还没背单词的话就赶快去背!",
 		}
 		msg.Reply()
-
 	})
 	if err != nil {
 		log.Panicf("添加定时器任务失败 : %v\n", err)
