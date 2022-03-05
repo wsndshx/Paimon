@@ -36,25 +36,38 @@ func Handle(message string, num int64) {
 
 	// 启用ai时使用api返回值作为判断依据, 否则使用正则表达式进行匹配
 	if Ai {
-		// 匹配被At到的行为: 转Ai, 且不再匹配后续规则
+		// 匹配被At到的行为: 作为用户语句中的派蒙使用
 		at := regexp.MustCompile(`\[CQ:at,qq=3381113848\]`)
+		At := false
 		if at.MatchString(message) {
-			// 获取分析结果
-			data := utils.Analysis(message)
-			// 输出
-			if data.Intents == 0 {
-				msg.Message = fmt.Sprintf("呜呜, 我听不懂你在说什么. 但我猜:%s", data.Traits)
-			}
-			msg.Message = fmt.Sprintf("我认为你在 %s, 并且可能具有以下特征:%s", utils.Intents[data.Intents], data.Traits)
-			msg.Reply()
-			return
+			// // 获取分析结果
+			// data := utils.Analysis(message)
+			// // 输出
+			// if data.Intents == 0 {
+			// 	msg.Message = fmt.Sprintf("呜呜, 我听不懂你在说什么. 但我猜:%s", data.Traits)
+			// }
+			// msg.Message = fmt.Sprintf("我认为你在 %s, 并且可能具有以下特征:%s", utils.Intents[data.Intents], data.Traits)
+			// msg.Reply()
+			// return
+			At = true
 		}
 		// 获取分析结果
 		data := utils.Analysis(message)
 		log.Printf("解析结果:\n %v\n", data)
 		// 判断用户在说什么
-		if data.Entities["paimon"] != "" {
+		if data.Entities["paimon"] != "" || At {
 			switch data.Intents {
+			case 0:
+				// 说个什么东西搪塞过去
+				content := []string{
+					"欸...? 旅行者说的东西好深奥派蒙听不懂......",
+					"旅行者你在说什么呀?",
+					"欸?",
+					"听不懂呢.......",
+				}
+				msg.Message = content[rand.Intn(len(content))]
+				msg.Reply()
+				return
 			case 1:
 				// 用户输入为早安
 				log.Println("消息`" + message + "`为早安问候")
@@ -74,6 +87,17 @@ func Handle(message string, num int64) {
 				log.Println("检测到特殊触发" + utils.Intents[data.Intents] + ", 开始进行关键字匹配...")
 				log.Println("触发关键字为: ", data.Entities["paimon"])
 				Praise_key = data.Entities["paimon"]
+			case 6:
+				// 唤醒派蒙
+				content := []string{
+					"派蒙在哦",
+					"我在~",
+					"(探头)",
+					"旅行者你在叫我吗?",
+				}
+				msg.Message = content[rand.Intn(len(content))]
+				msg.Reply()
+				return
 			case 7:
 				// 触发抽卡
 				// 判断抽取的次数
