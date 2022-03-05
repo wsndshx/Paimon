@@ -15,11 +15,6 @@ import (
 
 var Ai bool
 
-func init() {
-	log.SetPrefix("[Group]")
-	log.SetFlags(0)
-}
-
 func Handle(message string, num int64) {
 	// 构建消息体
 	msg := utils.Reply{

@@ -27,11 +27,6 @@ type ChineseWS struct {
 	Content string `json:"content"`
 }
 
-func init() {
-	log.SetPrefix("[HTTP]")
-	log.SetFlags(0)
-}
-
 // Chinese Word Segmentation
 func (message ChineseWS) ChineseWS() string {
 	type reply struct {
