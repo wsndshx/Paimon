@@ -61,7 +61,7 @@ func Analysis(input string) AnalysisData {
 	data := AnalysisData{}
 	// 处理Traits(特征)数据
 	if msg.Traits != nil {
-		for k, _ := range msg.Traits {
+		for k := range msg.Traits {
 			data.Traits = append(data.Traits, k)
 		}
 	}

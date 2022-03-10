@@ -1,18 +1,17 @@
-package module_test
+package module
 
 import (
 	"testing"
-
-	"github.com/wsndshx/Paimon/module"
 )
 
+// TestWish 测试用于祈愿的函数是否能以预期的概率输出结果
 func TestWish(t *testing.T) {
 	boule := 0
 	purple := 0
 	golden := 0
 	times := 1000000
 	for i := 0; i < times; i++ {
-		miao := module.Wish()
+		miao := wish()
 		switch miao {
 		case 0:
 			boule++
@@ -29,6 +28,12 @@ func TestWish(t *testing.T) {
 	蓝色: %d - %.2f%%`, times, golden, (float64(golden)/float64(times))*100, purple, (float64(purple)/float64(times))*100, boule, (float64(boule)/float64(times))*100)
 }
 
+// TestResident 测试能否正常使用常规池祈愿功能
 func TestResident(t *testing.T) {
-	t.Logf("%v", module.Resident(10))
+	times := 10
+	if str, err := Resident(times); err != nil {
+		t.Error(err)
+	} else {
+		t.Logf("许愿%d次常规池的结果: %v", times, str)
+	}
 }

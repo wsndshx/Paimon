@@ -37,25 +37,31 @@ func Handle(message string, num int64) {
 	// 启用ai时使用api返回值作为判断依据, 否则使用正则表达式进行匹配
 	if Ai {
 		// 匹配被At到的行为: 作为用户语句中的派蒙使用
-		at := regexp.MustCompile(`\[CQ:at,qq=3381113848\]`)
-		At := false
-		if at.MatchString(message) {
-			// // 获取分析结果
-			// data := utils.Analysis(message)
-			// // 输出
-			// if data.Intents == 0 {
-			// 	msg.Message = fmt.Sprintf("呜呜, 我听不懂你在说什么. 但我猜:%s", data.Traits)
-			// }
-			// msg.Message = fmt.Sprintf("我认为你在 %s, 并且可能具有以下特征:%s", utils.Intents[data.Intents], data.Traits)
-			// msg.Reply()
-			// return
-			At = true
+		at := false
+		{
+			at_str := regexp.MustCompile(`\[CQ:at,qq=3381113848\]`)
+			if at_str.MatchString(message) {
+				// // 获取分析结果
+				// data := utils.Analysis(message)
+				// // 输出
+				// if data.Intents == 0 {
+				// 	msg.Message = fmt.Sprintf("呜呜, 我听不懂你在说什么. 但我猜:%s", data.Traits)
+				// }
+				// msg.Message = fmt.Sprintf("我认为你在 %s, 并且可能具有以下特征:%s", utils.Intents[data.Intents], data.Traits)
+				// msg.Reply()
+				// return
+				at = true
+			}
 		}
+
 		// 获取分析结果
 		data := utils.Analysis(message)
-		log.Printf("解析结果:\n %v\n", data)
+		log.Printf("解析结果:\n意图: %s\n包含的实体: %v\n包含的特征: %v\n", utils.Intents[data.Intents], data.Entities, data.Traits)
+		if data.Entities["paimon"] == "" && at {
+			data.Entities["paimon"] = "at"
+		}
 		// 判断用户在说什么
-		if data.Entities["paimon"] != "" || At {
+		if data.Entities["paimon"] != "" || at {
 			switch data.Intents {
 			case 0:
 				// 说个什么东西搪塞过去
@@ -82,6 +88,7 @@ func Handle(message string, num int64) {
 				// 获取触发内容
 				log.Println("触发关键字为: ", data.Entities["paimon"])
 				Humiliate_key = data.Entities["paimon"]
+
 			case 4:
 				// 检测到称赞
 				log.Println("检测到特殊触发" + utils.Intents[data.Intents] + ", 开始进行关键字匹配...")
@@ -168,13 +175,29 @@ func Handle(message string, num int64) {
 			case "Wish":
 				msg.Message = "少女祈祷中......"
 				msg.Reply()
-				var times int
-				if len(arr) != 1 {
-					times, _ = strconv.Atoi(arr[1])
-				} else {
-					times = 1
+				{
+					var times int
+					if len(arr) != 1 {
+						times, _ = strconv.Atoi(arr[1])
+					} else {
+						times = 1
+					}
+					if times <= 20 {
+						// 这里是用纯文本进行回复
+						if data, err := module.Resident(times); err != nil {
+							msg.Message = "呜呜呜出错了: " + err.Error()
+						} else {
+							msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%v", data)
+						}
+					} else {
+						// 这里使用notion的API创建一个页面来输出祈愿的结果
+						if data, err := module.Resident(times); err != nil {
+							msg.Message = "呜呜呜出错了: " + err.Error()
+						} else {
+							msg.Message = fmt.Sprintf("旅行者, 抽取结果点这里查看哦: %s", data[0])
+						}
+					}
 				}
-				msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%s", module.Resident(times))
 				msg.Reply()
 			}
 		}

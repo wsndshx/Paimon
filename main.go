@@ -12,8 +12,9 @@ import (
 )
 
 type Conf struct {
-	Core Core `yaml:"core"`
-	Ai   Ai   `yaml:"ai"`
+	Core   Core   `yaml:"core"`
+	Ai     Ai     `yaml:"ai"`
+	Notion Notion `yaml:"notion"`
 }
 type Core struct {
 	Http_post   string `yaml:"http_post"`
@@ -22,6 +23,11 @@ type Core struct {
 type Ai struct {
 	Enable bool   `yaml:"enable"`
 	Token  string `yaml:"token"`
+}
+type Notion struct {
+	Token            string `yaml:"token"`
+	Wish_result_id   string `yaml:"wish_result_id"`
+	Wish_database_id string `yaml:"wish_database_id"`
 }
 
 type Message struct {
@@ -58,6 +64,11 @@ func main() {
 	var conf Conf
 	conf.getConf()
 	utils.Host = conf.Core.Cqhttp_host
+
+	utils.Notion_token = conf.Notion.Token
+	utils.Wish_result_id = conf.Notion.Wish_result_id
+	utils.Wish_database_id = conf.Notion.Wish_database_id
+
 	if conf.Ai.Enable {
 		utils.Ai_token = conf.Ai.Token
 		utils.Ai_init()
