@@ -194,7 +194,7 @@ func Handle(message string, num int64) {
 						if data, err := module.Resident(times); err != nil {
 							msg.Message = "呜呜呜出错了: " + err.Error()
 						} else {
-							msg.Message = fmt.Sprintf("旅行者, 抽取结果点这里查看哦: %s", data[0])
+							msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%s\n详细数据: %s", data[0], data[1])
 						}
 					}
 				}

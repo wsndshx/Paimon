@@ -215,12 +215,14 @@ func Resident(times int) (result []string, err error) {
 				}
 			}
 		} else {
-			// 获取抽取结果并暂存
+			// 抽取到的物品信息
 			type data struct {
 				Name  string
 				Grade string
 				Type  string
 			}
+
+			// 获取抽取结果并暂存
 			var datas struct {
 				Data   []data
 				Golden uint
@@ -272,6 +274,7 @@ func Resident(times int) (result []string, err error) {
 					})
 				}
 			}
+			result = append(result, fmt.Sprintf("总抽取次数: %d\n金色: %d\n紫色: %d", times, datas.Golden, datas.Purple))
 			// id 页面id或者数据库id
 			var id string
 
