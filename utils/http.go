@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 var requestQueue *RequestQueue
@@ -141,9 +142,18 @@ func (req *RequestQueue) notion() {
 				req.Header.Add("Content-Type", "application/json")
 			}
 
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
+			var res *http.Response
+			var err error
+			relieve := 0
+		retry:
+			if res, err = http.DefaultClient.Do(req); err != nil {
 				log.Println(err)
+				continue
+			} else if res.StatusCode == 429 {
+				relieve++
+				log.Printf("notion api 请求过快! 将在%ds后重新启动队列\n", relieve)
+				time.Sleep(time.Duration(relieve*3) * time.Second)
+				goto retry
 			}
 			// 将数据返回
 			data.Res <- res
