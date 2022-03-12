@@ -25,9 +25,10 @@ type Ai struct {
 	Token  string `yaml:"token"`
 }
 type Notion struct {
-	Token            string `yaml:"token"`
-	Wish_result_id   string `yaml:"wish_result_id"`
-	Wish_database_id string `yaml:"wish_database_id"`
+	Token            string            `yaml:"token"`
+	Wish_result_id   string            `yaml:"wish_result_id"`
+	Wish_database_id string            `yaml:"wish_database_id"`
+	UserList         map[uint64]string `yaml:"userList"`
 }
 
 type Message struct {
@@ -61,19 +62,27 @@ func (conf *Conf) getConf() *Conf {
 
 func main() {
 	// 读取配置文件
-	var conf Conf
-	conf.getConf()
-	utils.Host = conf.Core.Cqhttp_host
+	var post string
+	{
+		var conf Conf
+		conf.getConf()
+		utils.Host = conf.Core.Cqhttp_host
+		post = conf.Core.Http_post
 
-	utils.Notion_token = conf.Notion.Token
-	utils.Wish_result_id = conf.Notion.Wish_result_id
-	utils.Wish_database_id = conf.Notion.Wish_database_id
+		utils.Notion_token = conf.Notion.Token
+		utils.Wish_result_id = conf.Notion.Wish_result_id
+		utils.Wish_database_id = conf.Notion.Wish_database_id
+		for k, v := range conf.Notion.UserList {
+			utils.UserList[k] = v
+		}
 
-	if conf.Ai.Enable {
-		utils.Ai_token = conf.Ai.Token
-		utils.Ai_init()
-		message.Ai = true
+		if conf.Ai.Enable {
+			utils.Ai_token = conf.Ai.Token
+			utils.Ai_init()
+			message.Ai = true
+		}
 	}
+
 	gin.SetMode(gin.ReleaseMode)
 	// gin.DefaultWriter = ioutil.Discard
 	// 这是一个定时器任务, 临时用用
@@ -107,7 +116,7 @@ func main() {
 		case "private":
 			// 这里是私聊消息
 			log.Println("接收到私聊消息: " + msg.Raw_message)
-			if conf.Ai.Enable {
+			if message.Ai {
 				message.Private(msg.Raw_message, msg.User_id)
 			}
 		case "group":
@@ -116,5 +125,5 @@ func main() {
 			message.Handle(msg.Raw_message, msg.Group_id)
 		}
 	})
-	app.Run(":" + conf.Core.Http_post)
+	app.Run(":" + post)
 }

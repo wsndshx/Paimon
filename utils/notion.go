@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+func init() {
+	UserList = make(map[uint64]string)
+}
+
 type NewPage struct {
 	Parent struct {
 		Page_id string `json:"page_id"`
@@ -28,7 +32,16 @@ var (
 	Notion_token     string
 	Wish_database_id string
 	Wish_result_id   string
+	UserList         map[uint64]string
 )
+
+// 获取指定QQ号对应的名称(如果有)
+func GetUser(id uint64) string {
+	if name, ok := UserList[id]; ok {
+		return name
+	}
+	return fmt.Sprintf("%d", id)
+}
 
 // 向指定块中添加子块
 func AddChildren(block_id string) []byte {
@@ -198,7 +211,7 @@ func PostDatabase(parent string) (string, error) {
 		}{}
 		newDatabase.Parent.Type = "page_id"
 		newDatabase.Parent.Page_id = parent
-		newDatabase.Title = json.RawMessage(`[{"type":"text","text":{"content":"点击查看本次抽取结果"}}]`)
+		newDatabase.Title = json.RawMessage(`[{"type":"text","text":{"content":"详细数据"}}]`)
 		newDatabase.Properties = json.RawMessage(`{"等级":{"name":"等级","type":"select","select":{"options":[{"name":"五星","color":"yellow"},{"name":"四星","color":"purple"},{"name":"三星","color":"blue"}]}},"类型":{"name":"类型","type":"select","select":{"options":[{"name":"武器","color":"red"},{"name":"角色","color":"green"}]}},"名称":{"id":"title","name":"名称","type":"title","title":{}}}`)
 		newDatabaseJson, _ := json.Marshal(newDatabase)
 

@@ -197,140 +197,158 @@ func wish() uint8 {
 }
 
 // Resident 常规祈愿
-func Resident(times int) (result []string, err error) {
-	// 开始祈愿噢~
+func Resident(times int, qq uint64) (result []string, err error) {
 	// 设置一个随机数
 	rand.Seed(time.Now().Unix())
-	{
-		// 这里判断一下需要执行的次数, 当执行次数大于20时关闭文本输出, 转而使用网页显示
-		if times <= 20 {
-			for i := 0; i < times; i++ {
-				switch wish() {
-				case 0:
-					result = append(result, "(蓝)"+ResidentRole[rand.Intn(13)+55])
-				case 1:
-					result = append(result, "(紫)"+ResidentRole[rand.Intn(40)+15])
-				case 2:
-					result = append(result, "(金)"+ResidentRole[rand.Intn(15)])
-				}
-			}
-		} else {
-			// 抽取到的物品信息
-			type data struct {
-				Name  string
-				Grade string
-				Type  string
-			}
 
-			// 获取抽取结果并暂存
-			var datas struct {
-				Data   []data
-				Golden uint
-				Purple uint
-			}
-			datas.Golden = 0
-			datas.Purple = 0
-			for i := 0; i < times; i++ {
-				switch wish() {
-				case 0:
-					datas.Data = append(datas.Data, data{
-						Name:  ResidentRole[rand.Intn(13)+56],
-						Grade: "三星",
-						Type:  "武器",
-					})
-				case 1:
-					datas.Purple++
-					Type := ""
-					Name := ""
-					switch rand.Intn(2) {
-					case 0:
-						Type = "角色"
-						Name = ResidentRole[rand.Intn(23)+15]
-					case 1:
-						Type = "武器"
-						Name = ResidentRole[rand.Intn(18)+38]
-					}
-					datas.Data = append(datas.Data, data{
-						Name:  Name,
-						Grade: "四星",
-						Type:  Type,
-					})
-				case 2:
-					datas.Golden++
-					Type := ""
-					Name := ""
-					switch rand.Intn(2) {
-					case 0:
-						Type = "角色"
-						Name = ResidentRole[rand.Intn(5)]
-					case 1:
-						Type = "武器"
-						Name = ResidentRole[rand.Intn(10)+5]
-					}
-					datas.Data = append(datas.Data, data{
-						Name:  Name,
-						Grade: "五星",
-						Type:  Type,
-					})
-				}
-			}
-			result = append(result, fmt.Sprintf("总抽取次数: %d\n金色: %d\n紫色: %d", times, datas.Golden, datas.Purple))
-			// id 页面id或者数据库id
-			var id string
+	// 抽取到的物品信息
+	type data struct {
+		Name  string
+		Grade string
+		Type  string
+	}
 
-			// 创建结果页面
-			{
-				pageJson := utils.NewPage{}
-				pageJson.Parent.Type = "page_id"
-				pageJson.Parent.Page_id = "3fae29a9c883424585bc2aebc3508487"
-				pageJson.Properties = json.RawMessage(
-					`{"title":{"title":[{"text":{"content":"祈愿结果 ` + time.Now().Format("2006-01-02 15:04:05") + `"}}]}}`)
-				pageJson.Children = json.RawMessage(
-					fmt.Sprintf(`[{"type":"paragraph","paragraph":{"rich_text":[{"type":"text","text":{"content":"本次抽取的次数: %d"}}]}},{"type":"paragraph","paragraph":{"rich_text":[{"type":"text","text":{"content":"其中包含"}},{"type":"text","text":{"content":" %d "},"annotations":{"color":"yellow_background"}},{"type":"text","text":{"content":"个五星物品，"}},{"type":"text","text":{"content":" %d "},"annotations":{"color":"purple_background"}},{"type":"text","text":{"content":"个四星物品"}}]}}]`, times, datas.Golden, datas.Purple))
-				if id, err = utils.PostPage(pageJson); err != nil {
-					return nil, fmt.Errorf("创建新页面失败: %s", err)
-				} else if id == "" {
-					return nil, fmt.Errorf("创建新页面失败: 未知错误, 返回页面ID为空")
-				}
-			}
-			// 存入结果页面
-			result = append(result, "https://paimonnya.notion.site/"+id)
-			// 创建数据库
-			if id, err = utils.PostDatabase(id); err != nil {
-				return nil, fmt.Errorf("创建数据库失败: %s", err)
-			} else if id == "" {
-				return nil, fmt.Errorf("创建数据库失败: 未知错误, 返回数据库ID为空")
-			}
-			// 上传数据到结果页面
-			go func() {
-				databasePage := utils.NewDataPage{}
-				databasePage.Parent.Type = "database_id"
-				databasePage.Parent.Database_id = id
-				for _, d := range datas.Data {
-					err_times := 0
-					// 构建数据库页面
-					databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"类型":{"type":"select","select":{"name":"%s"}},"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, d.Type, d.Grade, d.Name))
-				reset:
-					// 存入数据
-					if _, err = utils.PostPage(databasePage); err != nil {
+	// 获取抽取结果并暂存
+	var datas struct {
+		Data   []data
+		Golden uint
+		Purple uint
+	}
+	datas.Golden = 0
+	datas.Purple = 0
 
-						if err_times >= 3 {
-							log.Printf("存入数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
-							return
-						}
-						// 这里加一个报错吧
-						err_times++
-						log.Printf("存入数据库时出错: %s, 将在%ds后重试", err, err_times*3)
-						time.Sleep(time.Duration(3*err_times) * time.Second)
-						goto reset
-					}
-					// 阻塞250毫秒, 避免触发429
-					time.Sleep(250 * time.Millisecond)
-				}
-			}()
-			return result, nil
-			// 上传数据到全局数据库页面(待完成)
+	// 开始祈愿噢~
+	for i := 0; i < times; i++ {
+		switch wish() {
+		case 0:
+			datas.Data = append(datas.Data, data{
+				Name:  ResidentRole[rand.Intn(13)+56],
+				Grade: "三星",
+				Type:  "武器",
+			})
+		case 1:
+			datas.Purple++
+			Type := ""
+			Name := ""
+			switch rand.Intn(2) {
+			case 0:
+				Type = "角色"
+				Name = ResidentRole[rand.Intn(23)+15]
+			case 1:
+				Type = "武器"
+				Name = ResidentRole[rand.Intn(18)+38]
+			}
+			datas.Data = append(datas.Data, data{
+				Name:  Name,
+				Grade: "四星",
+				Type:  Type,
+			})
+		case 2:
+			datas.Golden++
+			Type := ""
+			Name := ""
+			switch rand.Intn(2) {
+			case 0:
+				Type = "角色"
+				Name = ResidentRole[rand.Intn(5)]
+			case 1:
+				Type = "武器"
+				Name = ResidentRole[rand.Intn(10)+5]
+			}
+			datas.Data = append(datas.Data, data{
+				Name:  Name,
+				Grade: "五星",
+				Type:  Type,
+			})
 		}
 	}
+
+	// 这里判断一下祈愿的次数, 当祈愿次数大于等于20时关闭文本输出, 转而使用网页显示
+	if times <= 20 {
+		for _, d := range datas.Data {
+			result = append(result, fmt.Sprintf("(%s)%s", d.Grade, d.Name))
+		}
+	} else {
+		result = append(result, fmt.Sprintf("总抽取次数: %d\n金色: %d\n紫色: %d", times, datas.Golden, datas.Purple))
+		// id 页面id或者数据库id
+		var id string
+		// 创建结果页面
+		{
+			pageJson := utils.NewPage{}
+			pageJson.Parent.Page_id = utils.Wish_result_id
+			pageJson.Properties = json.RawMessage(
+				`{"title":{"title":[{"text":{"content":"祈愿结果 ` + time.Now().Format("2006-01-02 15:04:05") + `"}}]}}`)
+			pageJson.Children = json.RawMessage(
+				fmt.Sprintf(`[{"type":"paragraph","paragraph":{"rich_text":[{"type":"text","text":{"content":"本次抽取的次数: %d"}}]}},{"type":"paragraph","paragraph":{"rich_text":[{"type":"text","text":{"content":"其中包含"}},{"type":"text","text":{"content":" %d "},"annotations":{"color":"yellow_background"}},{"type":"text","text":{"content":"个五星物品，"}},{"type":"text","text":{"content":" %d "},"annotations":{"color":"purple_background"}},{"type":"text","text":{"content":"个四星物品"}}]}}]`, times, datas.Golden, datas.Purple))
+			if id, err = pageJson.PostPage(); err != nil {
+				return nil, fmt.Errorf("创建新页面失败: %s", err)
+			} else if id == "" {
+				return nil, fmt.Errorf("创建新页面失败: 未知错误, 返回页面ID为空")
+			}
+		}
+		// 存入结果页面
+		result = append(result, "https://paimonnya.notion.site/"+id)
+		// 创建数据库
+		if id, err = utils.PostDatabase(id); err != nil {
+			return nil, fmt.Errorf("创建数据库失败: %s", err)
+		} else if id == "" {
+			return nil, fmt.Errorf("创建数据库失败: 未知错误, 返回数据库ID为空")
+		}
+		// 上传数据到结果页面
+		go func() {
+			databasePage := utils.NewDataPage{}
+			databasePage.Parent.Database_id = id
+
+			// TODO 遍历datas.Data中包含的抽取结果,
+			// 并将其上传至之前创建的数据库页面
+			for _, d := range datas.Data {
+				// 构建数据库页面
+				databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"类型":{"type":"select","select":{"name":"%s"}},"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, d.Type, d.Grade, d.Name))
+				// 统计错误次数
+				err_times := 0
+			reset:
+				// 存入数据
+				if _, err = databasePage.PostPage(); err != nil {
+					if err_times >= 3 {
+						log.Printf("存入结果页面数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
+						return
+					}
+					// 这里加一个报错吧
+					err_times++
+					log.Printf("存入结果页面数据库时出错: %s, 将在%ds后重试", err, err_times*3)
+					time.Sleep(time.Duration(3*err_times) * time.Second)
+					goto reset
+				}
+			}
+		}()
+	}
+
+	// 上传数据到全局数据库页面
+	go func() {
+		databasePage := utils.NewDataPage{}
+		databasePage.Parent.Database_id = utils.Wish_database_id
+
+		// TODO 遍历datas.Data中包含的抽取结果,
+		// 并将其上传至之前创建的数据库页面
+		for _, data := range datas.Data {
+			// 构建数据库页面
+			databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"rich_text","rich_text":[{"type":"text","text":{"content":"%s"}}]},"时间":{"type":"date","date":{"start":"%s"}},"类型":{"type":"select","select":{"name":"%s"}},"操作人":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, data.Grade, data.Name, time.Now().Format("2006-01-02T15:04:05.000-07:00"), data.Type, utils.GetUser(qq)))
+			// 统计错误次数
+			err_times := 0
+		reset:
+			if _, err := databasePage.PostPage(); err != nil {
+				// 错误处理
+				if err_times > 3 {
+					log.Printf("存入汇总数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
+					return
+				}
+				err_times++
+				log.Printf("存入汇总数据库时出错: %s, 将在%ds后重试", err, err_times*3)
+				time.Sleep(time.Duration(3*err_times) * time.Second)
+				goto reset
+			}
+		}
+	}()
+
 	return result, nil
 }
