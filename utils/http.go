@@ -4,9 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
+
+var requestQueue *RequestQueue
+
+func init() {
+	// 初始化任务队列
+	requestQueue = &RequestQueue{
+		Queue: make(chan NotionRequest, 256),
+	}
+	go requestQueue.notion()
+}
 
 type HTTP interface {
 	Reply()
@@ -21,6 +32,11 @@ type Reply struct {
 	User_id      int64  `json:"user_id"`
 	Group_id     int64  `json:"group_id"`
 	Message      string `json:"message"`
+}
+
+type ReplyP struct {
+	User_id int64  `json:"user_id"`
+	Message string `json:"message"`
 }
 
 type ChineseWS struct {
@@ -60,6 +76,24 @@ func (message ChineseWS) ChineseWS() string {
 }
 
 // Reply 回复消息
+func (message ReplyP) Reply() []byte {
+	JsonBody := new(bytes.Buffer)
+	json.NewEncoder(JsonBody).Encode(message)
+
+	res, err := http.Post(Host+"/send_msg", "application/json;charset=utf-8", JsonBody)
+	if err != nil {
+		log.Println(err.Error())
+	} else {
+		// jsonData, _ := io.ReadAll(res.Body)
+		// json.Unmarshal(jsonData, &Json)
+		log.Printf("发送消息`%s`成功\n", message.Message)
+	}
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	return body
+}
 func (message Reply) Reply() {
 	// type reply struct {
 	// 	Message_id int32 `json:"message_id"`
@@ -78,4 +112,43 @@ func (message Reply) Reply() {
 	}
 
 	defer res.Body.Close()
+}
+
+// NotionRequest 用于构建请求
+type NotionRequest struct {
+	API  string              //需要请求的接口
+	Type string              //请求的类型
+	Body io.Reader           //发送出去的数据
+	Res  chan *http.Response //返回的数据
+}
+type RequestQueue struct {
+	Queue chan NotionRequest
+}
+
+// notion 这里用来处理notion相关api的请求
+func (req *RequestQueue) notion() {
+	// 接受请求
+	for {
+		select {
+		case data := <-req.Queue:
+			url := "https://api.notion.com" + data.API
+			req, _ := http.NewRequest(data.Type, url, data.Body)
+
+			req.Header.Add("Accept", "application/json")
+			req.Header.Add("Notion-Version", "2022-02-22")
+			req.Header.Add("Authorization", "Bearer "+Notion_token)
+			if data.Body != nil {
+				req.Header.Add("Content-Type", "application/json")
+			}
+
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				log.Println(err)
+			}
+			// 将数据返回
+			data.Res <- res
+			close(data.Res)
+		default:
+		}
+	}
 }
