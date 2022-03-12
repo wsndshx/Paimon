@@ -182,20 +182,23 @@ func Handle(message string, num int64) {
 					} else {
 						times = 1
 					}
-					if times <= 20 {
-						// 这里是用纯文本进行回复
-						if data, err := module.Resident(times); err != nil {
-							msg.Message = "呜呜呜出错了: " + err.Error()
-						} else {
-							msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%v", data)
-						}
+
+					// 获取祈愿结果
+					var result []string
+					if data, err := module.Resident(times, uint64(num)); err != nil {
+						msg.Message = "呜呜呜出错了: " + err.Error()
+						msg.Reply()
+						return
 					} else {
-						// 这里使用notion的API创建一个页面来输出祈愿的结果
-						if data, err := module.Resident(times); err != nil {
-							msg.Message = "呜呜呜出错了: " + err.Error()
-						} else {
-							msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%s\n详细数据: %s", data[0], data[1])
-						}
+						result = data
+					}
+
+					// 当祈愿次数小于等于20时使用纯文本展示,
+					// 否则使用网站链接展示
+					if times <= 20 {
+						msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%v", result)
+					} else {
+						msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%s\n详细数据: %s", result[0], result[1])
 					}
 				}
 				msg.Reply()
