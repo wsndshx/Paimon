@@ -27,13 +27,3 @@ func TestWish(t *testing.T) {
 	紫色: %d - %.2f%%
 	蓝色: %d - %.2f%%`, times, golden, (float64(golden)/float64(times))*100, purple, (float64(purple)/float64(times))*100, boule, (float64(boule)/float64(times))*100)
 }
-
-// TestResident 测试能否正常使用常规池祈愿功能
-func TestResident(t *testing.T) {
-	times := 10
-	if str, err := Resident(times); err != nil {
-		t.Error(err)
-	} else {
-		t.Logf("许愿%d次常规池的结果: %v", times, str)
-	}
-}
