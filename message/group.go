@@ -15,7 +15,7 @@ import (
 
 var Ai bool
 
-func Handle(message string, num int64) {
+func Handle(message string, num int64, user int64) {
 	// 构建消息体
 	msg := utils.Reply{
 		Message_type: "group",
@@ -185,7 +185,7 @@ func Handle(message string, num int64) {
 
 					// 获取祈愿结果
 					var result []string
-					if data, err := module.Resident(times, uint64(num)); err != nil {
+					if data, err := module.Resident(times, uint64(user)); err != nil {
 						msg.Message = "呜呜呜出错了: " + err.Error()
 						msg.Reply()
 						return

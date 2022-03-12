@@ -122,7 +122,7 @@ func main() {
 		case "group":
 			// 这里是群聊消息
 			log.Println("接收到群组消息: " + msg.Raw_message)
-			message.Handle(msg.Raw_message, msg.Group_id)
+			message.Handle(msg.Raw_message, msg.Group_id, msg.User_id)
 		}
 	})
 	app.Run(":" + post)
