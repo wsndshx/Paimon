@@ -108,6 +108,7 @@ func Handle(message string, num int64, user int64) {
 				} else if pooler = data.Entities["weapon"]; pooler != "" {
 					typer = "Weapon"
 				} else {
+					pooler = "null"
 					typer = "Resident"
 				}
 
