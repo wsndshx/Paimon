@@ -199,7 +199,7 @@ func wish() uint8 {
 // Resident 常规祈愿
 func Resident(times int, qq uint64) (result []string, err error) {
 	// 设置一个随机数
-	rand.Seed(time.Now().Unix())
+	rand.Seed(int64(qq))
 
 	// 抽取到的物品信息
 	type data struct {
