@@ -12,6 +12,43 @@ import (
 
 // 这里是模拟抽卡的噢....
 
+// 抽取结果
+type datas struct {
+	Data   []data // 每次抽取到的物品数据
+	Golden uint8  // 抽取到的金色物品数量
+	Purple uint8  // 抽取到的紫色物品数量
+}
+
+// 抽取到的物品数据
+type data struct {
+	Name  string // 物品名称
+	Grade string // 物品等级
+	Type  string // 物品类型
+}
+
+var (
+	IsRoleUpPurple bool  = false // 下次祈愿获取的4星物品必定为本期4星UP角色
+	IsRoleUpGolden bool  = false // 下次祈愿获取的5星物品必定为本期5星UP角色
+	times_Golden   uint8 = 0     // 统计未抽到的金色物品的次数
+	times_Purple   uint8 = 0     // 统计未抽到的紫色物品的次数
+)
+
+// 整个角色活动祈愿池
+var UpRole map[string][]string = map[string][]string{
+	"雷神": {
+		"雷电将军",
+		"九条裟罗",
+		"辛焱",
+		"班尼特",
+	},
+	"心海": {
+		"珊瑚宫心海",
+		"九条裟罗",
+		"辛焱",
+		"班尼特",
+	},
+}
+
 // 先整个常规池
 var ResidentWeapon []string = []string{
 	"阿莫斯之弓",
@@ -86,9 +123,6 @@ var ResidentRole []string = []string{
 	"芭芭拉",
 	"丽莎",
 }
-
-var times_Golden uint8 = 0
-var times_Purple uint8 = 0
 
 // wish 用于获取祈愿得到的物品星级
 //
@@ -199,76 +233,199 @@ func wish() uint8 {
 }
 
 // Role 角色活动祈愿
-// func Role(times int, qq uint64) (result []string, err error) {
+//
+// times: 需要抽取的次数; qq: 进行祈愿的用户; up: 需要抽取的up池
+func Role(times uint8, qq uint64, up string) (result []string, err error) {
+	var upPool []string // 用户选择的角色池
+	{
+		var ok bool
+		if upPool, ok = UpRole[up]; !ok {
+			return nil, fmt.Errorf("%s: 不存在该角色池!", up)
+		}
+	}
 
-// }
-
-// Resident 常规祈愿
-func Resident(times int, qq uint64) (result []string, err error) {
 	// 设置一个随机数
 	rand.Seed(int64(qq))
 
-	// 抽取到的物品信息
-	type data struct {
-		Name  string
-		Grade string
-		Type  string
-	}
-
-	// 获取抽取结果并暂存
-	var datas struct {
-		Data   []data
-		Golden uint
-		Purple uint
-	}
+	datas := datas{}
 	datas.Golden = 0
 	datas.Purple = 0
 
 	// 开始祈愿噢~
-	for i := 0; i < times; i++ {
-		switch wish() {
-		case 0:
-			datas.Data = append(datas.Data, data{
-				Name:  ResidentWeapon[rand.Intn(13)+28],
-				Grade: "三星",
-				Type:  "武器",
-			})
-		case 1:
-			datas.Purple++
-			Type := ""
-			Name := ""
-			switch rand.Intn(2) {
+	{
+		var i uint8
+		for i = 0; i < times; i++ {
+			switch wish() {
 			case 0:
-				Type = "角色"
-				Name = ResidentRole[rand.Intn(23)+5]
+				// 出三星物品
+				datas.Data = append(datas.Data, data{
+					Name:  ResidentWeapon[rand.Intn(13)+28],
+					Grade: "三星",
+					Type:  "武器",
+				})
+
 			case 1:
-				Type = "武器"
-				Name = ResidentWeapon[rand.Intn(18)+10]
+				// 出四星物品
+				datas.Purple++
+				Type := ""
+				Name := ""
+				if IsRoleUpPurple {
+					// 下次祈愿获取的4星物品必定为本期4星UP角色
+					Type = "角色"
+					Name = upPool[rand.Intn(3)+1]
+					goto breakPurpleSwitch
+				}
+				// 判断是否UP
+				switch rand.Intn(2) {
+				case 0:
+					// 有50.000%的概率为本期4星UP角色
+					Type = "角色"
+					Name = upPool[rand.Intn(3)+1]
+					IsRoleUpPurple = false
+				case 1:
+					// 下次祈愿获取的4星物品必定为本期4星UP角色
+					IsRoleUpPurple = true
+					// 常驻角色武器五五开
+					switch rand.Intn(2) {
+					case 0:
+						Type = "角色"
+						Name = ResidentRole[rand.Intn(23)+5]
+					case 1:
+						Type = "武器"
+						Name = ResidentWeapon[rand.Intn(18)+10]
+					}
+				}
+
+			breakPurpleSwitch:
+				datas.Data = append(datas.Data, data{
+					Name:  Name,
+					Grade: "四星",
+					Type:  Type,
+				})
+				// 出五星物品
+			case 2:
+				datas.Golden++
+				Type := "角色"
+				Name := ""
+				if IsRoleUpGolden {
+					Name = upPool[0]
+					// 这里跳过下方的switch块
+					goto breakGoldenSwitch
+				}
+
+				switch rand.Intn(2) {
+				case 0:
+					IsRoleUpGolden = true
+					// 50%的概率获得非本期5星UP角色
+					Name = ResidentRole[rand.Intn(5)]
+				case 1:
+					// 50%的概率为本期5星UP角色
+					Name = upPool[0]
+					IsRoleUpGolden = false
+				}
+
+			breakGoldenSwitch:
+				datas.Data = append(datas.Data, data{
+					Name:  Name,
+					Grade: "五星",
+					Type:  Type,
+				})
 			}
-			datas.Data = append(datas.Data, data{
-				Name:  Name,
-				Grade: "四星",
-				Type:  Type,
-			})
-		case 2:
-			datas.Golden++
-			Type := ""
-			Name := ""
-			switch rand.Intn(2) {
-			case 0:
-				Type = "角色"
-				Name = ResidentRole[rand.Intn(5)]
-			case 1:
-				Type = "武器"
-				Name = ResidentWeapon[rand.Intn(10)]
-			}
-			datas.Data = append(datas.Data, data{
-				Name:  Name,
-				Grade: "五星",
-				Type:  Type,
-			})
 		}
 	}
+
+	return datas.getResult(times, qq)
+}
+
+// Resident 常规祈愿
+func Resident(times uint8, qq uint64) (result []string, err error) {
+	// 设置一个随机数
+	rand.Seed(int64(qq))
+
+	datas := datas{}
+	datas.Golden = 0
+	datas.Purple = 0
+
+	// 开始祈愿噢~
+	{
+		var i uint8
+		for i = 0; i < times; i++ {
+			switch wish() {
+			case 0:
+				datas.Data = append(datas.Data, data{
+					Name:  ResidentWeapon[rand.Intn(13)+28],
+					Grade: "三星",
+					Type:  "武器",
+				})
+			case 1:
+				datas.Purple++
+				Type := ""
+				Name := ""
+				switch rand.Intn(2) {
+				case 0:
+					Type = "角色"
+					Name = ResidentRole[rand.Intn(23)+5]
+				case 1:
+					Type = "武器"
+					Name = ResidentWeapon[rand.Intn(18)+10]
+				}
+				datas.Data = append(datas.Data, data{
+					Name:  Name,
+					Grade: "四星",
+					Type:  Type,
+				})
+			case 2:
+				datas.Golden++
+				Type := ""
+				Name := ""
+				switch rand.Intn(2) {
+				case 0:
+					Type = "角色"
+					Name = ResidentRole[rand.Intn(5)]
+				case 1:
+					Type = "武器"
+					Name = ResidentWeapon[rand.Intn(10)]
+				}
+				datas.Data = append(datas.Data, data{
+					Name:  Name,
+					Grade: "五星",
+					Type:  Type,
+				})
+			}
+		}
+	}
+
+	return datas.getResult(uint8(times), qq)
+}
+
+// getResult 获取格式化的抽取结果
+func (datas datas) getResult(times uint8, qq uint64) (result []string, err error) {
+	// 上传数据到全局数据库页面
+	go func() {
+		databasePage := utils.NewDataPage{}
+		databasePage.Parent.Database_id = utils.Wish_database_id
+
+		// TODO 遍历datas.Data中包含的抽取结果,
+		// 并将其上传至之前创建的数据库页面
+		for _, data := range datas.Data {
+			// 构建数据库页面
+			databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"rich_text","rich_text":[{"type":"text","text":{"content":"%s"}}]},"时间":{"type":"date","date":{"start":"%s"}},"类型":{"type":"select","select":{"name":"%s"}},"操作人":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, data.Grade, data.Name, time.Now().Format("2006-01-02T15:04:05.000-07:00"), data.Type, utils.GetUser(qq)))
+			// 统计错误次数
+			err_times := 0
+		reset:
+			if _, err := databasePage.PostPage(); err != nil {
+				// 错误处理
+				if err_times > 3 {
+					log.Printf("存入汇总数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
+					return
+				}
+				err_times++
+				log.Printf("存入汇总数据库时出错: %s, 将在%ds后重试", err, err_times*3)
+				time.Sleep(time.Duration(3*err_times) * time.Second)
+				goto reset
+			}
+		}
+	}()
 
 	// 这里判断一下祈愿的次数, 当祈愿次数大于等于20时关闭文本输出, 转而使用网页显示
 	if times <= 20 {
@@ -329,33 +486,6 @@ func Resident(times int, qq uint64) (result []string, err error) {
 			}
 		}()
 	}
-
-	// 上传数据到全局数据库页面
-	go func() {
-		databasePage := utils.NewDataPage{}
-		databasePage.Parent.Database_id = utils.Wish_database_id
-
-		// TODO 遍历datas.Data中包含的抽取结果,
-		// 并将其上传至之前创建的数据库页面
-		for _, data := range datas.Data {
-			// 构建数据库页面
-			databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"rich_text","rich_text":[{"type":"text","text":{"content":"%s"}}]},"时间":{"type":"date","date":{"start":"%s"}},"类型":{"type":"select","select":{"name":"%s"}},"操作人":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, data.Grade, data.Name, time.Now().Format("2006-01-02T15:04:05.000-07:00"), data.Type, utils.GetUser(qq)))
-			// 统计错误次数
-			err_times := 0
-		reset:
-			if _, err := databasePage.PostPage(); err != nil {
-				// 错误处理
-				if err_times > 3 {
-					log.Printf("存入汇总数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
-					return
-				}
-				err_times++
-				log.Printf("存入汇总数据库时出错: %s, 将在%ds后重试", err, err_times*3)
-				time.Sleep(time.Duration(3*err_times) * time.Second)
-				goto reset
-			}
-		}
-	}()
 
 	return result, nil
 }
