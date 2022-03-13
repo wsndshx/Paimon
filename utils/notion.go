@@ -9,10 +9,6 @@ import (
 	"strings"
 )
 
-func init() {
-	UserList = make(map[uint64]string)
-}
-
 type NewPage struct {
 	Parent struct {
 		Page_id string `json:"page_id"`
@@ -32,7 +28,7 @@ var (
 	Notion_token     string
 	Wish_database_id string
 	Wish_result_id   string
-	UserList         map[uint64]string
+	UserList         map[uint64]string = make(map[uint64]string)
 )
 
 // 获取指定QQ号对应的名称(如果有)
