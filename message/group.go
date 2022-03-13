@@ -41,15 +41,6 @@ func Handle(message string, num int64, user int64) {
 		{
 			at_str := regexp.MustCompile(`\[CQ:at,qq=3381113848\]`)
 			if at_str.MatchString(message) {
-				// // 获取分析结果
-				// data := utils.Analysis(message)
-				// // 输出
-				// if data.Intents == 0 {
-				// 	msg.Message = fmt.Sprintf("呜呜, 我听不懂你在说什么. 但我猜:%s", data.Traits)
-				// }
-				// msg.Message = fmt.Sprintf("我认为你在 %s, 并且可能具有以下特征:%s", utils.Intents[data.Intents], data.Traits)
-				// msg.Reply()
-				// return
 				at = true
 			}
 		}
@@ -107,8 +98,24 @@ func Handle(message string, num int64, user int64) {
 				return
 			case 7:
 				// 触发抽卡
-				// 判断抽取的次数
-				Cmd = "Wish " + data.Entities["wit$number"]
+
+				var typer string  // 池子的类型
+				var pooler string // 选择的池子
+				var times string  // 祈愿的次数
+
+				if pooler = data.Entities["role"]; pooler != "" {
+					typer = "Role"
+				} else if pooler = data.Entities["weapon"]; pooler != "" {
+					typer = "Weapon"
+				} else {
+					typer = "Resident"
+				}
+
+				if times = data.Entities["wit$number"]; times == "" {
+					times = "1"
+				}
+
+				Cmd = fmt.Sprintf("Wish %s %s %s", typer, pooler, times)
 				log.Println("检测到指令 `" + Cmd + "` , 开始执行...")
 			}
 		}
@@ -171,38 +178,58 @@ func Handle(message string, num int64, user int64) {
 	{
 		if Cmd != "" {
 			arr := strings.Fields(Cmd)
+
+			// 解析一级指令
+		OutCMD:
 			switch arr[0] {
 			case "Wish":
 				msg.Message = "少女祈祷中......"
 				msg.Reply()
-				{
-					var times int
-					if len(arr) != 1 {
-						times, _ = strconv.Atoi(arr[1])
-					} else {
-						times = 1
-					}
 
-					// 获取祈愿结果
-					var result []string
+				// 存储祈愿结果
+				var result []string
+
+				// 解析抽取的次数
+				var times uint8
+				if time, err := strconv.ParseUint(arr[3], 10, 8); err != nil {
+					msg.Message = "呜呜呜出错了: " + err.Error()
+					break OutCMD
+				} else {
+					times = uint8(time)
+				}
+
+				// 解析二级指令
+				switch arr[1] {
+				case "Resident":
+					// 常驻祈愿
 					if data, err := module.Resident(times, uint64(user)); err != nil {
 						msg.Message = "呜呜呜出错了: " + err.Error()
-						msg.Reply()
-						return
+						break OutCMD
 					} else {
 						result = data
 					}
-
-					// 当祈愿次数小于等于20时使用纯文本展示,
-					// 否则使用网站链接展示
-					if times <= 20 {
-						msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%v", result)
+				case "Role":
+					// 角色祈愿
+					if data, err := module.Role(times, uint64(user), arr[2]); err != nil {
+						msg.Message = "呜呜呜出错了: " + err.Error()
+						break OutCMD
 					} else {
-						msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%s\n详细数据: %s", result[0], result[1])
+						result = data
 					}
+				case "Weapon":
+					// 武器祈愿
 				}
-				msg.Reply()
+
+				// 当祈愿次数小于等于20时使用纯文本展示,
+				// 否则使用网站链接展示
+				if times <= 20 {
+					msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%v", result)
+				} else {
+					msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%s\n详细数据: %s", result[0], result[1])
+				}
 			}
+			// 输出指令的执行结果
+			msg.Reply()
 		}
 	}
 }
