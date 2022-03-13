@@ -13,12 +13,7 @@ import (
 // 这里是模拟抽卡的噢....
 
 // 先整个常规池
-var ResidentRole []string = []string{
-	"刻晴",
-	"莫娜",
-	"七七",
-	"迪卢克",
-	"琴",
+var ResidentWeapon []string = []string{
 	"阿莫斯之弓",
 	"天空之翼",
 	"四风原典",
@@ -29,29 +24,6 @@ var ResidentRole []string = []string{
 	"天空之傲",
 	"天空之刃",
 	"风鹰剑",
-	"云堇",
-	"九条裟罗",
-	"五郎",
-	"早柚",
-	"托马",
-	"烟绯",
-	"罗莎莉亚",
-	"辛焱",
-	"砂糖",
-	"迪奥娜",
-	"重云",
-	"诺艾尔",
-	"班尼特",
-	"菲谢尔",
-	"凝光",
-	"行秋",
-	"北斗",
-	"香菱",
-	"安柏",
-	"雷泽",
-	"凯亚",
-	"芭芭拉",
-	"丽莎",
 	"弓藏",
 	"祭礼弓",
 	"绝弦",
@@ -83,6 +55,36 @@ var ResidentRole []string = []string{
 	"飞天御剑",
 	"黎明神剑",
 	"冷刃",
+}
+var ResidentRole []string = []string{
+	"刻晴",
+	"莫娜",
+	"七七",
+	"迪卢克",
+	"琴",
+	"云堇",
+	"九条裟罗",
+	"五郎",
+	"早柚",
+	"托马",
+	"烟绯",
+	"罗莎莉亚",
+	"辛焱",
+	"砂糖",
+	"迪奥娜",
+	"重云",
+	"诺艾尔",
+	"班尼特",
+	"菲谢尔",
+	"凝光",
+	"行秋",
+	"北斗",
+	"香菱",
+	"安柏",
+	"雷泽",
+	"凯亚",
+	"芭芭拉",
+	"丽莎",
 }
 
 var times_Golden uint8 = 0
@@ -196,6 +198,11 @@ func wish() uint8 {
 	}
 }
 
+// Role 角色活动祈愿
+// func Role(times int, qq uint64) (result []string, err error) {
+
+// }
+
 // Resident 常规祈愿
 func Resident(times int, qq uint64) (result []string, err error) {
 	// 设置一个随机数
@@ -222,7 +229,7 @@ func Resident(times int, qq uint64) (result []string, err error) {
 		switch wish() {
 		case 0:
 			datas.Data = append(datas.Data, data{
-				Name:  ResidentRole[rand.Intn(13)+56],
+				Name:  ResidentWeapon[rand.Intn(13)+28],
 				Grade: "三星",
 				Type:  "武器",
 			})
@@ -233,10 +240,10 @@ func Resident(times int, qq uint64) (result []string, err error) {
 			switch rand.Intn(2) {
 			case 0:
 				Type = "角色"
-				Name = ResidentRole[rand.Intn(23)+15]
+				Name = ResidentRole[rand.Intn(23)+5]
 			case 1:
 				Type = "武器"
-				Name = ResidentRole[rand.Intn(18)+38]
+				Name = ResidentWeapon[rand.Intn(18)+10]
 			}
 			datas.Data = append(datas.Data, data{
 				Name:  Name,
@@ -253,7 +260,7 @@ func Resident(times int, qq uint64) (result []string, err error) {
 				Name = ResidentRole[rand.Intn(5)]
 			case 1:
 				Type = "武器"
-				Name = ResidentRole[rand.Intn(10)+5]
+				Name = ResidentWeapon[rand.Intn(10)]
 			}
 			datas.Data = append(datas.Data, data{
 				Name:  Name,
