@@ -245,7 +245,7 @@ func Role(times uint8, qq uint64, up string) (result []string, err error) {
 	}
 
 	// 设置一个随机数
-	rand.Seed(int64(qq))
+	rand.Seed(int64(qq) + time.Now().Unix())
 
 	datas := datas{}
 	datas.Golden = 0
@@ -340,7 +340,7 @@ func Role(times uint8, qq uint64, up string) (result []string, err error) {
 // Resident 常规祈愿
 func Resident(times uint8, qq uint64) (result []string, err error) {
 	// 设置一个随机数
-	rand.Seed(int64(qq))
+	rand.Seed(int64(qq) + time.Now().Unix())
 
 	datas := datas{}
 	datas.Golden = 0
