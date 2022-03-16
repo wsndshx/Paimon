@@ -12,6 +12,12 @@ import (
 
 // 这里是模拟抽卡的噢....
 
+// notionAPI 与notionAPI有关的操作
+type notionAPI interface {
+	upPageDatabase(Page_id string) // 在指定页面下创建数据库并上传数据
+	upGlobalDatabase(qq uint64)    // 上传数据到全局数据库当中
+}
+
 // 抽取结果
 type datas struct {
 	Data   []data // 每次抽取到的物品数据
@@ -400,38 +406,13 @@ func Resident(times uint8, qq uint64) (result []string, err error) {
 
 // getResult 获取格式化的抽取结果
 func (datas datas) getResult(times uint8, qq uint64) (result []string, err error) {
-	// 上传数据到全局数据库页面
-	go func() {
-		databasePage := utils.NewDataPage{}
-		databasePage.Parent.Database_id = utils.Wish_database_id
-
-		// TODO 遍历datas.Data中包含的抽取结果,
-		// 并将其上传至之前创建的数据库页面
-		for _, data := range datas.Data {
-			// 构建数据库页面
-			databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"rich_text","rich_text":[{"type":"text","text":{"content":"%s"}}]},"时间":{"type":"date","date":{"start":"%s"}},"类型":{"type":"select","select":{"name":"%s"}},"操作人":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, data.Grade, data.Name, time.Now().Format("2006-01-02T15:04:05.000-07:00"), data.Type, utils.GetUser(qq)))
-			// 统计错误次数
-			err_times := 0
-		reset:
-			if _, err := databasePage.PostPage(); err != nil {
-				// 错误处理
-				if err_times > 3 {
-					log.Printf("存入汇总数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
-					return
-				}
-				err_times++
-				log.Printf("存入汇总数据库时出错: %s, 将在%ds后重试", err, err_times*3)
-				time.Sleep(time.Duration(3*err_times) * time.Second)
-				goto reset
-			}
-		}
-	}()
-
+	go datas.upGlobalDatabase(qq)
 	// 这里判断一下祈愿的次数, 当祈愿次数大于等于20时关闭文本输出, 转而使用网页显示
 	if times <= 20 {
 		for _, d := range datas.Data {
 			result = append(result, fmt.Sprintf("(%s)%s", d.Grade, d.Name))
 		}
+		return
 	} else {
 		result = append(result, fmt.Sprintf("总抽取次数: %d\n金色: %d\n紫色: %d", times, datas.Golden, datas.Purple))
 		// id 页面id或者数据库id
@@ -444,7 +425,7 @@ func (datas datas) getResult(times uint8, qq uint64) (result []string, err error
 				`{"title":{"title":[{"text":{"content":"祈愿结果 ` + time.Now().Format("2006-01-02 15:04:05") + `"}}]}}`)
 			pageJson.Children = json.RawMessage(
 				fmt.Sprintf(`[{"type":"paragraph","paragraph":{"rich_text":[{"type":"text","text":{"content":"本次抽取的次数: %d"}}]}},{"type":"paragraph","paragraph":{"rich_text":[{"type":"text","text":{"content":"其中包含"}},{"type":"text","text":{"content":" %d "},"annotations":{"color":"yellow_background"}},{"type":"text","text":{"content":"个五星物品，"}},{"type":"text","text":{"content":" %d "},"annotations":{"color":"purple_background"}},{"type":"text","text":{"content":"个四星物品"}}]}}]`, times, datas.Golden, datas.Purple))
-			if id, err = pageJson.PostPage(); err != nil {
+			if id, err = pageJson.PostPage(true); err != nil {
 				return nil, fmt.Errorf("创建新页面失败: %s", err)
 			} else if id == "" {
 				return nil, fmt.Errorf("创建新页面失败: 未知错误, 返回页面ID为空")
@@ -458,34 +439,62 @@ func (datas datas) getResult(times uint8, qq uint64) (result []string, err error
 		} else if id == "" {
 			return nil, fmt.Errorf("创建数据库失败: 未知错误, 返回数据库ID为空")
 		}
-		// 上传数据到结果页面
-		go func() {
-			databasePage := utils.NewDataPage{}
-			databasePage.Parent.Database_id = id
-
-			// TODO 遍历datas.Data中包含的抽取结果,
-			// 并将其上传至之前创建的数据库页面
-			for _, d := range datas.Data {
-				// 构建数据库页面
-				databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"类型":{"type":"select","select":{"name":"%s"}},"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, d.Type, d.Grade, d.Name))
-				// 统计错误次数
-				err_times := 0
-			reset:
-				// 存入数据
-				if _, err = databasePage.PostPage(); err != nil {
-					if err_times >= 3 {
-						log.Printf("存入结果页面数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
-						return
-					}
-					// 这里加一个报错吧
-					err_times++
-					log.Printf("存入结果页面数据库时出错: %s, 将在%ds后重试", err, err_times*3)
-					time.Sleep(time.Duration(3*err_times) * time.Second)
-					goto reset
-				}
-			}
-		}()
+		go datas.upPageDatabase(id)
 	}
+	return
+}
 
-	return result, nil
+// 在指定页面下创建数据库并上传数据
+func (datas datas) upPageDatabase(Page_id string) {
+	databasePage := utils.NewDataPage{}
+	databasePage.Parent.Database_id = Page_id
+
+	// TODO 遍历datas.Data中包含的抽取结果,
+	// 并将其上传至之前创建的数据库页面
+	for _, d := range datas.Data {
+		// 构建数据库页面
+		databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"类型":{"type":"select","select":{"name":"%s"}},"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, d.Type, d.Grade, d.Name))
+		// 统计错误次数
+		err_times := 0
+	reset:
+		// 存入数据
+		if _, err := databasePage.PostPage(false); err != nil {
+			if err_times >= 3 {
+				log.Printf("存入结果页面数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
+				return
+			}
+			// 这里加一个报错吧
+			err_times++
+			log.Printf("存入结果页面数据库时出错: %s, 将在%ds后重试", err, err_times*3)
+			time.Sleep(time.Duration(3*err_times) * time.Second)
+			goto reset
+		}
+	}
+}
+
+// 上传数据到全局数据库当中
+func (datas datas) upGlobalDatabase(qq uint64) {
+	databasePage := utils.NewDataPage{}
+	databasePage.Parent.Database_id = utils.Wish_database_id
+
+	// TODO 遍历datas.Data中包含的抽取结果,
+	// 并将其上传至之前创建的数据库页面
+	for _, data := range datas.Data {
+		// 构建数据库页面
+		databasePage.Properties = json.RawMessage(fmt.Sprintf(`{"等级":{"type":"select","select":{"name":"%s"}},"名称":{"type":"rich_text","rich_text":[{"type":"text","text":{"content":"%s"}}]},"时间":{"type":"date","date":{"start":"%s"}},"类型":{"type":"select","select":{"name":"%s"}},"操作人":{"type":"title","title":[{"type":"text","text":{"content":"%s"}}]}}`, data.Grade, data.Name, time.Now().Format("2006-01-02T15:04:05.000-07:00"), data.Type, utils.GetUser(qq)))
+		// 统计错误次数
+		err_times := 0
+	reset:
+		if _, err := databasePage.PostPage(false); err != nil {
+			// 错误处理
+			if err_times > 3 {
+				log.Printf("存入汇总数据库时出错: %s, 连续错误次数达3次, 退出当前任务...", err)
+				return
+			}
+			err_times++
+			log.Printf("存入汇总数据库时出错: %s, 将在%ds后重试", err, err_times*3)
+			time.Sleep(time.Duration(3*err_times) * time.Second)
+			goto reset
+		}
+	}
 }
