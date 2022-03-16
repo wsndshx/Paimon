@@ -15,7 +15,8 @@ var requestQueue *RequestQueue
 func init() {
 	// 初始化任务队列
 	requestQueue = &RequestQueue{
-		Queue: make(chan NotionRequest, 256),
+		Queue:     make(chan NotionRequest, 256),
+		HighQueue: make(chan NotionRequest, 256),
 	}
 	go requestQueue.notion()
 }
