@@ -125,15 +125,15 @@ func GetPage(page_id string) []byte {
 	return body
 }
 
-func (data NewPage) PostPage() (string, error) {
-	return postPage(data)
+func (data NewPage) PostPage(HighQueue bool) (string, error) {
+	return postPage(data, HighQueue)
 }
-func (data NewDataPage) PostPage() (string, error) {
-	return postPage(data)
+func (data NewDataPage) PostPage(HighQueue bool) (string, error) {
+	return postPage(data, HighQueue)
 }
 
 // 创建页面, 返回创建的新页面的ID
-func postPage(data interface{}) (string, error) {
+func postPage(data interface{}, HighQueue bool) (string, error) {
 	var res *http.Response
 	{
 		var err error
@@ -151,7 +151,11 @@ func postPage(data interface{}) (string, error) {
 			Body: payload,
 			Res:  make(chan *http.Response),
 		}
-		requestQueue.Queue <- request
+		if HighQueue {
+			requestQueue.HighQueue <- request
+		} else {
+			requestQueue.Queue <- request
+		}
 		res = <-request.Res
 		defer res.Body.Close()
 	}
@@ -219,7 +223,7 @@ func PostDatabase(parent string) (string, error) {
 			Body: payload,
 			Res:  make(chan *http.Response),
 		}
-		requestQueue.Queue <- request
+		requestQueue.HighQueue <- request
 		res = <-request.Res
 	}
 	defer res.Body.Close()

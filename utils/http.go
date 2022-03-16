@@ -123,7 +123,8 @@ type NotionRequest struct {
 	Res  chan *http.Response //返回的数据
 }
 type RequestQueue struct {
-	Queue chan NotionRequest
+	Queue     chan NotionRequest // 普通队列
+	HighQueue chan NotionRequest // 会被优先处理的队列
 }
 
 // notion 这里用来处理notion相关api的请求
@@ -131,34 +132,45 @@ func (req *RequestQueue) notion() {
 	// 接受请求
 	for {
 		select {
-		case data := <-req.Queue:
-			url := "https://api.notion.com" + data.API
-			req, _ := http.NewRequest(data.Type, url, data.Body)
-
-			req.Header.Add("Accept", "application/json")
-			req.Header.Add("Notion-Version", "2022-02-22")
-			req.Header.Add("Authorization", "Bearer "+Notion_token)
-			if data.Body != nil {
-				req.Header.Add("Content-Type", "application/json")
-			}
-
-			var res *http.Response
-			var err error
-			relieve := 0
-		retry:
-			if res, err = http.DefaultClient.Do(req); err != nil {
-				log.Println(err)
-				continue
-			} else if res.StatusCode == 429 {
-				relieve++
-				log.Printf("notion api 请求过快! 将在%ds后重新启动队列\n", relieve)
-				time.Sleep(time.Duration(relieve*3) * time.Second)
-				goto retry
-			}
-			// 将数据返回
-			data.Res <- res
-			close(data.Res)
+		case data := <-req.HighQueue:
+			processing(data)
 		default:
+			select {
+			case data := <-req.HighQueue:
+				processing(data)
+			case data := <-req.Queue:
+				processing(data)
+			}
 		}
 	}
+}
+
+// processing 处理队列
+func processing(data NotionRequest) {
+	url := "https://api.notion.com" + data.API
+	req, _ := http.NewRequest(data.Type, url, data.Body)
+
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Notion-Version", "2022-02-22")
+	req.Header.Add("Authorization", "Bearer "+Notion_token)
+	if data.Body != nil {
+		req.Header.Add("Content-Type", "application/json")
+	}
+
+	var res *http.Response
+	var err error
+	relieve := 0
+retry:
+	if res, err = http.DefaultClient.Do(req); err != nil {
+		log.Println(err)
+		return
+	} else if res.StatusCode == 429 {
+		relieve++
+		log.Printf("notion api 请求过快! 将在%ds后重新启动队列\n", relieve)
+		time.Sleep(time.Duration(relieve*3) * time.Second)
+		goto retry
+	}
+	// 将数据返回
+	data.Res <- res
+	close(data.Res)
 }
