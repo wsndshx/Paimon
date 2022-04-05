@@ -81,6 +81,11 @@ func (Cron *Cron) CronList() string {
 
 // CronAdd 添加定时器
 func (Cron *Cron) CronAdd(in CronTask) error {
+	if Cron.cronList == nil {
+		in.EntryID = 1
+	} else {
+		in.EntryID = len(Cron.cronList)
+	}
 	// 先注册
 	ID, err := Cron.timer.AddFunc(in.Time, func() {
 		log.Println("执行定时任务......")
@@ -91,7 +96,22 @@ func (Cron *Cron) CronAdd(in CronTask) error {
 		}
 		msg.Reply()
 
-		// 这里删除数据库的内容
+		// 将该任务从列表中删除
+		if Cron.cronList[in.EntryID].EntryID == in.EntryID {
+			// 若符合猜测则直接移除当前元素
+			Cron.cronList = append(Cron.cronList[:in.EntryID-1], Cron.cronList[in.EntryID:]...)
+			return
+		} else {
+			// 否则遍历
+			for i, ct := range Cron.cronList {
+				if ct.Time == in.Time && ct.Content == in.Content && ct.TargetId == in.TargetId {
+					Cron.cronList = append(Cron.cronList[:i], Cron.cronList[i+1:]...)
+					return
+				}
+			}
+		}
+		// 这里是没找到的情况
+		log.Printf("任务列表删除已完成任务时失败: 未找到相应的任务: \n任务ID(猜测): %d\n表达式: %s\n内容: %s\n目标: %d\n", in.EntryID, in.Time, in.Content, in.TargetId)
 	})
 	if err == nil {
 		in.EntryID = int(ID)
