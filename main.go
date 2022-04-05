@@ -10,6 +10,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var timer *utils.Cron
+
 type Conf struct {
 	Core   Core   `yaml:"core"`
 	Ai     Ai     `yaml:"ai"`
@@ -84,6 +86,11 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	// gin.DefaultWriter = ioutil.Discard
+
+	// 初始化定时器
+	timer = utils.NewCron()
+	message.Timer = timer
+	defer timer.CronClose()
 
 	// 监听post请求
 	app := gin.Default()

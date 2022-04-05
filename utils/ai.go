@@ -19,6 +19,7 @@ var Intents []string = []string{
 	"Stating",
 	"Awaken",
 	"Wish",
+	"Reminder",
 }
 
 // Analysis 语句的分析结果
@@ -103,6 +104,7 @@ func Analysis(input string) AnalysisData {
 		"Stating":      5,
 		"Awaken":       6,
 		"Wish":         7,
+		"Reminder":     8,
 	}
 	data.Intents = intents[msg.Intents[0].Name]
 	return data
