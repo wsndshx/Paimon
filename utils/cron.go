@@ -51,17 +51,17 @@ func NewCron() *Cron {
 func (Cron *Cron) CronLocal() (err error) {
 	// 从数据库中加载过去的任务
 	// 判断是否存在旧的数据库文件
-	if _, err = os.Stat("Cron.db"); err != nil {
+	if _, err = os.Stat("data/Cron.db"); err != nil {
 		if os.IsNotExist(err) {
 			// 文件不存在, 创建新的数据库文件
-			cronDB, err = db.NewDB("Cron.db")
+			cronDB, err = db.NewDB("data/Cron.db")
 			return
 		}
 		// 文件打开失败
 		return
 	}
 	// 读取数据库中的内容
-	cronDB, err = db.Open("Cron.db")
+	cronDB, err = db.Open("data/Cron.db")
 	data, err := cronDB.Get("CronList")
 	if err != nil {
 		return
