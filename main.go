@@ -91,7 +91,7 @@ func main() {
 	// 初始化定时器
 	timer = utils.NewCron()
 	message.Timer = timer
-	defer timer.CronClose()
+	defer timer.Close()
 
 	// 监听post请求
 	app := gin.Default()

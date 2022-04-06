@@ -13,13 +13,13 @@ func init() {
 }
 
 func TestCronLocal(t *testing.T) {
-	if err := testCron.CronLocal(); err != nil {
+	if err := testCron.Local(); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestCronList(t *testing.T) {
-	t.Log("目前包含的任务为: \n" + testCron.CronList())
+	t.Log("目前包含的任务为: \n" + testCron.List())
 }
 
 func TestCronAdd(t *testing.T) {
@@ -31,11 +31,21 @@ func TestCronAdd(t *testing.T) {
 	if err := testCron.CronAdd(cron); err != nil {
 		t.Error(err)
 	}
-	t.Log("目前包含的任务为: \n" + testCron.CronList())
+	t.Log("目前包含的任务为: \n" + testCron.List())
+
+	cron.Content = "这是应当被删除的记录"
+	if err := testCron.CronAdd(cron); err != nil {
+		t.Error(err)
+	}
+	t.Log("目前包含的任务为: \n" + testCron.List())
+}
+
+func TestRemove(t *testing.T) {
+	testCron.Remove(2)
 }
 
 func TestCronClose(t *testing.T) {
-	if err := testCron.CronClose(); err != nil {
+	if err := testCron.Close(); err != nil {
 		t.Error(err)
 	}
 }
