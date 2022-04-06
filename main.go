@@ -91,6 +91,9 @@ func main() {
 	// 初始化定时器
 	timer = utils.NewCron()
 	message.Timer = timer
+	if err := timer.Local(); err != nil {
+		log.Panic("无法加载定时器数据库: " + err.Error())
+	}
 	defer timer.Close()
 
 	// 监听post请求
