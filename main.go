@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wsndshx/Paimon/message"
@@ -102,7 +103,9 @@ func main() {
 		switch msg.Message_type {
 		case "private":
 			// 这里是私聊消息
-			log.Println("接收到私聊消息: " + msg.Raw_message)
+			text := strings.Replace(msg.Raw_message, "\n", "\\n", -1)
+			text = strings.Replace(text, "\n", "\\n", -1)
+			log.Println("接收到私聊消息: " + text)
 			if message.Ai {
 				message.Private(msg.Raw_message, msg.User_id)
 			}

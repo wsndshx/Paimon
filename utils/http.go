@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -110,6 +111,8 @@ func (message Reply) Reply() {
 	} else {
 		// jsonData, _ := io.ReadAll(res.Body)
 		// json.Unmarshal(jsonData, &Json)
+		message.Message = strings.Replace(message.Message, "\n", "\\n", -1)
+		message.Message = strings.Replace(message.Message, "\r", "\\r", -1)
 		log.Printf("发送消息`%s`成功\n", message.Message)
 	}
 
