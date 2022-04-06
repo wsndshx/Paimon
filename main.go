@@ -3,7 +3,10 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wsndshx/Paimon/message"
@@ -63,6 +66,33 @@ func (conf *Conf) getConf() *Conf {
 }
 
 func main() {
+	//创建监听退出chan
+	c := make(chan os.Signal)
+	//监听指定信号 ctrl+c kill
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		// for s := range c {
+		// 	switch s {
+		// 	case syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT:
+		// 		fmt.Println("退出", s)
+		// 		ExitFunc()
+		// 	case syscall.SIGUSR1:
+		// 		fmt.Println("usr1", s)
+		// 	case syscall.SIGUSR2:
+		// 		fmt.Println("usr2", s)
+		// 	default:
+		// 		fmt.Println("other", s)
+		// 	}
+		// }
+
+		select {
+		// 捕获终止信号
+		case sig := <-c:
+			log.Print("捕获退出信号: " + sig.String())
+			timer.Close()
+		}
+	}()
+
 	// 读取配置文件
 	var post string
 	{
