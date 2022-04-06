@@ -99,20 +99,21 @@ func main() {
 		// 获取接收的消息
 		msg := Message{}
 		c.BindJSON(&msg)
+		text := strings.Replace(msg.Raw_message, "\n", "", -1)
+		text = strings.Replace(text, "\r", "", -1)
 		// 分理消息
 		switch msg.Message_type {
 		case "private":
 			// 这里是私聊消息
-			text := strings.Replace(msg.Raw_message, "\n", "\\n", -1)
-			text = strings.Replace(text, "\n", "\\n", -1)
+
 			log.Println("接收到私聊消息: " + text)
 			if message.Ai {
-				message.Private(msg.Raw_message, msg.User_id)
+				message.Private(text, msg.User_id)
 			}
 		case "group":
 			// 这里是群聊消息
-			log.Println("接收到群组消息: " + msg.Raw_message)
-			message.Handle(msg.Raw_message, msg.Group_id, msg.User_id)
+			log.Println("接收到群组消息: " + text)
+			message.Handle(text, msg.Group_id, msg.User_id)
 		}
 	})
 	app.Run(":" + post)
