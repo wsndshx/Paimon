@@ -151,7 +151,7 @@ func (Cron *Cron) updateIndex() {
 
 // CronClose 在程序结束时调用, 把未完成的任务存入数据库
 func (Cron *Cron) CronClose() error {
-	data, err := encode(Cron.cronList)
+	data, err := encode(Cron.cronList.list)
 	if err != nil {
 		return err
 	}
