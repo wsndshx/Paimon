@@ -9,7 +9,7 @@ import (
 var testCron *utils.Cron
 
 func init() {
-	testCron = utils.NewCron()
+	testCron = utils.NewCron("TestCron.db")
 }
 
 func TestCronLocal(t *testing.T) {

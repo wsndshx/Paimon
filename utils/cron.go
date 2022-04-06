@@ -16,6 +16,7 @@ var (
 )
 
 type Cron struct {
+	dbPATH   string
 	timer    *cron.Cron
 	cronList struct {
 		index map[int]int
@@ -30,10 +31,18 @@ type CronTask struct {
 	EntryID  int
 }
 
-// NewCron 创建一个定时器
-func NewCron() *Cron {
+// NewCron 创建一个定时器;
+//
+// 该函数接受一个可选的参数dbPath，用于指定数据库的存放路径
+func NewCron(dbPath ...string) *Cron {
+	// 缺省路径
+	path := "data/Cron.db"
+	if dbPath != nil {
+		path = dbPath[0]
+	}
 	c := &Cron{
-		timer: cron.New(),
+		dbPATH: path,
+		timer:  cron.New(),
 		cronList: struct {
 			index map[int]int
 			list  []CronTask
@@ -51,17 +60,17 @@ func NewCron() *Cron {
 func (Cron *Cron) CronLocal() (err error) {
 	// 从数据库中加载过去的任务
 	// 判断是否存在旧的数据库文件
-	if _, err = os.Stat("data/Cron.db"); err != nil {
+	if _, err = os.Stat(Cron.dbPATH); err != nil {
 		if os.IsNotExist(err) {
 			// 文件不存在, 创建新的数据库文件
-			cronDB, err = db.NewDB("data/Cron.db")
+			cronDB, err = db.NewDB(Cron.dbPATH)
 			return
 		}
 		// 文件打开失败
 		return
 	}
 	// 读取数据库中的内容
-	cronDB, err = db.Open("data/Cron.db")
+	cronDB, err = db.Open(Cron.dbPATH)
 	data, err := cronDB.Get("CronList")
 	if err != nil {
 		return
