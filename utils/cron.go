@@ -17,7 +17,10 @@ var (
 
 type Cron struct {
 	timer    *cron.Cron
-	cronList []CronTask
+	cronList struct {
+		index map[int]int
+		list  []CronTask
+	}
 }
 
 type CronTask struct {
@@ -30,8 +33,14 @@ type CronTask struct {
 // NewCron 创建一个定时器
 func NewCron() *Cron {
 	c := &Cron{
-		timer:    cron.New(),
-		cronList: []CronTask{},
+		timer: cron.New(),
+		cronList: struct {
+			index map[int]int
+			list  []CronTask
+		}{
+			index: make(map[int]int),
+			list:  []CronTask{},
+		},
 	}
 	// 启动定时器
 	c.timer.Start()
@@ -73,19 +82,14 @@ func (Cron *Cron) CronLocal() (err error) {
 // CronList 列出当前存在的定时器数据
 func (Cron *Cron) CronList() string {
 	List := "------"
-	for _, ct := range Cron.cronList {
-		List += fmt.Sprintf("任务ID: %d\n表达式: %s\n内容: %s\n目标: %d\n------", ct.EntryID, ct.Time, ct.Content, ct.TargetId)
+	for _, ct := range Cron.cronList.list {
+		List += fmt.Sprintf("\n任务ID: %d\n表达式: %s\n内容: %s\n目标: %d\n------", ct.EntryID, ct.Time, ct.Content, ct.TargetId)
 	}
 	return fmt.Sprint(List)
 }
 
 // CronAdd 添加定时器
 func (Cron *Cron) CronAdd(in CronTask) error {
-	if Cron.cronList == nil {
-		in.EntryID = 1
-	} else {
-		in.EntryID = len(Cron.cronList)
-	}
 	// 先注册
 	ID, err := Cron.timer.AddFunc(in.Time, func() {
 		log.Println("执行定时任务......")
@@ -97,29 +101,52 @@ func (Cron *Cron) CronAdd(in CronTask) error {
 		msg.Reply()
 
 		// 将该任务从列表中删除
-		if Cron.cronList[in.EntryID].EntryID == in.EntryID {
-			// 若符合猜测则直接移除当前元素
-			Cron.cronList = append(Cron.cronList[:in.EntryID-1], Cron.cronList[in.EntryID:]...)
+		log.Println("任务完成, 开始将该任务从列表中删除")
+		if len(Cron.cronList.list) == 1 {
+			Cron.cronList.list = []CronTask{}
+			Cron.cronList.index = make(map[int]int)
+			log.Println("删除成功")
+			Cron.updateIndex()
 			return
-		} else {
-			// 否则遍历
-			for i, ct := range Cron.cronList {
+		}
+		index := Cron.cronList.index[in.EntryID]
+		if Cron.cronList.list[index].EntryID != in.EntryID {
+			log.Println("索引失败, 开始遍历")
+			for i, ct := range Cron.cronList.list {
 				if ct.Time == in.Time && ct.Content == in.Content && ct.TargetId == in.TargetId {
-					Cron.cronList = append(Cron.cronList[:i], Cron.cronList[i+1:]...)
+					Cron.cronList.list = append(Cron.cronList.list[:i], Cron.cronList.list[i+1:]...)
+					Cron.updateIndex()
 					return
 				}
 			}
+			// 这里是没找到的情况
+			log.Printf("任务列表删除已完成任务时失败: 未找到相应的任务: \n任务ID(猜测): %d\n表达式: %s\n内容: %s\n目标: %d\n", in.EntryID, in.Time, in.Content, in.TargetId)
 		}
-		// 这里是没找到的情况
-		log.Printf("任务列表删除已完成任务时失败: 未找到相应的任务: \n任务ID(猜测): %d\n表达式: %s\n内容: %s\n目标: %d\n", in.EntryID, in.Time, in.Content, in.TargetId)
+		// 若索引成功则直接移除当前元素
+		Cron.cronList.list = append(Cron.cronList.list[:index], Cron.cronList.list[index+1:]...)
+		log.Println("删除成功")
+		Cron.updateIndex()
 	})
-	if err == nil {
-		in.EntryID = int(ID)
-		// 将内容写入列表
-		Cron.cronList = append(Cron.cronList, in)
+	if err != nil {
+		return err
 	}
+	in.EntryID = int(ID)
+	// 将内容写入列表
+	Cron.cronList.list = append(Cron.cronList.list, in)
+	Cron.cronList.index[int(ID)] = len(Cron.cronList.list) - 1
 
-	return err
+	return nil
+}
+
+func (Cron *Cron) updateIndex() {
+	// 更新索引
+	if len(Cron.cronList.list) == 0 {
+		Cron.cronList.index = make(map[int]int)
+		return
+	}
+	for i := range Cron.cronList.list {
+		Cron.cronList.index[Cron.cronList.list[i].EntryID] = i
+	}
 }
 
 // CronClose 在程序结束时调用, 把未完成的任务存入数据库
