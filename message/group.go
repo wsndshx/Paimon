@@ -130,7 +130,7 @@ func Handle(message string, num int64, user int64) {
 				daily := data.Entities["daily"] != ""
 				times, _ := time.Parse("2006-01-02T15:04:05.000-07:00", timeStr)
 				// 判断时间合法性
-				if !time.Now().Before(times) {
+				if !time.Now().Before(times) && !daily {
 					msg.Message = "旅行者, 我没有回溯时间的能力哦"
 					msg.Reply()
 					return
