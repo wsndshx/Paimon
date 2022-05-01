@@ -55,7 +55,12 @@ func Private(message string, id int64) {
 		return
 	}
 	// 私聊数据全部扔给ai处理
-	data := utils.Analysis(message)
+	data, err := utils.Analysis(message)
+	if err != nil {
+		msg.Message = "呜呜呜, 出错了: " + err.Error()
+		msg.Reply()
+		return
+	}
 
 	// 输出
 	if data.Intents == 0 {

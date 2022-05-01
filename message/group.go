@@ -48,7 +48,13 @@ func Handle(message string, num int64, user int64) {
 		}
 
 		// 获取分析结果
-		data := utils.Analysis(message)
+		data, err := utils.Analysis(message)
+		if err != nil {
+			// 分析错误
+			msg.Message = "呜呜呜, 出错了: " + err.Error()
+			msg.Reply()
+			return
+		}
 		log.Printf("解析结果:\n意图: %s\n包含的实体: %v\n包含的特征: %v\n", utils.Intents[data.Intents], data.Entities, data.Traits)
 		if data.Entities["paimon"] == "" && at {
 			data.Entities["paimon"] = "at"

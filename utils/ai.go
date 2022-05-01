@@ -39,13 +39,13 @@ func Ai_init() {
 }
 
 // Analysis 对用户输入进行分析, 返回语句的分析结果
-func Analysis(input string) AnalysisData {
+func Analysis(input string) (AnalysisData, error) {
 	// 删除无意义的内容
 	rm := regexp.MustCompile(`\s{0,1}\[CQ:.*\]\s{0,1}`)
 	// 先对内容进行分词
 	cws := rm.ReplaceAllString(input, "")
 	if cws == "" {
-		return AnalysisData{}
+		return AnalysisData{}, nil
 	}
 	slices := ChineseWS{
 		Content: cws,
@@ -57,6 +57,7 @@ func Analysis(input string) AnalysisData {
 	})
 	if err != nil {
 		log.Fatalln(err)
+		return AnalysisData{}, err
 	}
 
 	data := AnalysisData{}
@@ -93,7 +94,7 @@ func Analysis(input string) AnalysisData {
 	if len(msg.Intents) == 0 {
 		// return fmt.Sprintf("呜呜, 我听不懂你在说什么. 但我猜:%s", Traits)
 		data.Intents = 0
-		return data
+		return data, nil
 	}
 	// return fmt.Sprintf("我认为你在 %s, 并且可能具有以下特征:%s", msg.Intents[0].Name, Traits)
 	intents := map[string]uint8{
@@ -107,5 +108,5 @@ func Analysis(input string) AnalysisData {
 		"Reminder":     8,
 	}
 	data.Intents = intents[msg.Intents[0].Name]
-	return data
+	return data, nil
 }
