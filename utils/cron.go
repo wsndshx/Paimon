@@ -12,7 +12,9 @@ import (
 )
 
 var (
-	cronDB *db.KVdb
+	cronDB  *db.KVdb
+	entryID = 0                          // 任务id计数器
+	idToId  = make(map[int]cron.EntryID) //将entryID映射至cronID
 )
 
 type Cron struct {
@@ -50,6 +52,7 @@ func NewCron(dbPath ...string) *Cron {
 			list:  []CronTask{},
 		},
 	}
+	c.timer.Start()
 	return c
 }
 
@@ -134,22 +137,29 @@ func (Cron *Cron) List() string {
 
 // CronAdd 添加定时器
 func (Cron *Cron) CronAdd(in CronTask) error {
+	log.Println("开始添加定时任务......")
+	Group_id := in.TargetId
+	Message := in.Content
 	// 先注册
 	ID, err := Cron.timer.AddFunc(in.Time, func() {
 		log.Println("执行定时任务......")
 		msg := Reply{
 			Message_type: "group",
-			Group_id:     in.TargetId,
-			Message:      in.Content,
+			Group_id:     Group_id,
+			Message:      Message,
 		}
 		msg.Reply()
 
 		// 将该任务从列表中删除
-		Cron.Remove(int(in.EntryID))
+		Cron.cronList.remove(idToId[entryID])
+		// 更新索引
+		Cron.cronList.updateIndex()
 	})
 	if err != nil {
 		return err
 	}
+	idToId[entryID] = ID
+	entryID++
 
 	// 将内容写入列表
 	in.EntryID = ID
@@ -172,6 +182,7 @@ func (cronList *cronList) updateIndex() {
 
 // Close 在程序结束时调用, 把未完成的任务存入数据库
 func (Cron *Cron) Close() error {
+	log.Println("开始存储定时器任务")
 	data, err := encode(Cron.cronList.list)
 	if err != nil {
 		return err

@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/wsndshx/Paimon/message"
+	"github.com/wsndshx/Paimon/module"
 	"github.com/wsndshx/Paimon/utils"
 	"gopkg.in/yaml.v2"
 )
@@ -90,6 +91,7 @@ func main() {
 		case sig := <-c:
 			log.Print("捕获退出信号: " + sig.String())
 			timer.Close()
+			os.Exit(0)
 		}
 	}()
 
@@ -120,7 +122,7 @@ func main() {
 
 	// 初始化定时器
 	timer = utils.NewCron()
-	message.Timer = timer
+	module.Timer = timer
 	if err := timer.Local(); err != nil {
 		log.Panic("无法加载定时器数据库: " + err.Error())
 	}

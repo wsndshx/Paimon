@@ -1,12 +1,10 @@
 package message
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -153,8 +151,12 @@ func Handle(message string, num int64, user int64) {
 				var reminderText string
 				if data.Entities["wit$message_body"] != "" {
 					reminderText = data.Entities["wit$message_body"]
-				} else {
+				} else if data.Entities["wit$reminder"] != "" {
 					reminderText = data.Entities["wit$reminder"]
+				} else {
+					// 在无法获取的情况下, 使用正则进行提取
+					text := regexp.MustCompile(`(?<=").*?(?=")`)
+					reminderText = text.FindString(message)
 				}
 				reminderText = strings.Trim(reminderText, "\"")
 				reminderText = strings.Trim(reminderText, "“")
@@ -226,85 +228,12 @@ func Handle(message string, num int64, user int64) {
 
 	// 指令解析
 	{
-		var err error
-
-		if Cmd != "" {
-			log.Println("执行指令: /" + Cmd)
-			arr := strings.Fields(Cmd)
-
-			// 解析一级指令
-		OutCMD:
-			switch arr[0] {
-			case "Reminder":
-				cronStr := fmt.Sprintf("%s %s %s %s ?", arr[2], arr[3], arr[4], arr[5])
-				targetId, err := strconv.ParseInt(arr[1], 10, 64)
-				if err != nil {
-					err = errors.New(fmt.Sprintf("解析目标ID错误: %v\n", err))
-					break OutCMD
-				}
-
-				if err := Timer.CronAdd(utils.CronTask{
-					Time:     cronStr,
-					Content:  arr[6],
-					TargetId: targetId,
-				}); err != nil {
-					err = errors.New(fmt.Sprintf("添加定时器任务失败 : %v\n", err))
-					break OutCMD
-				}
-				msg.Message = "派蒙记住了~"
-
-			case "Wish":
-				msg.Message = "少女祈祷中......"
-				msg.Reply()
-
-				// 存储祈愿结果
-				var result []string
-
-				// 解析抽取的次数
-				var times uint8
-				if time, thisErr := strconv.ParseUint(arr[3], 10, 8); thisErr != nil {
-					err = errors.New("解析抽取次数失败: " + err.Error())
-					break OutCMD
-				} else {
-					times = uint8(time)
-				}
-
-				// 解析二级指令
-				switch arr[1] {
-				case "Resident":
-					// 常驻祈愿
-					if data, thisErr := module.Resident(times, uint64(user)); thisErr != nil {
-						err = errors.New("常规祈愿失败: " + thisErr.Error())
-						break OutCMD
-					} else {
-						result = data
-					}
-				case "Role":
-					// 角色祈愿
-					if data, thisErr := module.Role(times, uint64(user), arr[2]); thisErr != nil {
-						err = errors.New("角色活动祈愿失败: " + thisErr.Error())
-						break OutCMD
-					} else {
-						result = data
-					}
-				case "Weapon":
-					// 武器祈愿
-				}
-
-				// 当祈愿次数小于等于20时使用纯文本展示,
-				// 否则使用网站链接展示
-				if times <= 20 {
-					msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%v", result)
-				} else {
-					msg.Message = fmt.Sprintf("太好了旅行者, 抽到了这些东西呢: \n%s\n详细数据: %s", result[0], result[1])
-				}
-			}
-			// 输出指令的执行结果
-			if err != nil {
-				log.Printf("指令执行错误: %s\n", err)
-				msg.Message = "呜呜呜出错了: " + err.Error()
-			}
-			msg.Reply()
+		if Cmd == "" {
+			return
 		}
+		log.Println("执行指令: /" + Cmd)
+		arr := strings.Fields(Cmd)
+		// 运行指令
+		module.Cmd(arr, &msg, uint64(user))
 	}
 }

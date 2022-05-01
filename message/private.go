@@ -2,9 +2,9 @@ package message
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
+	"github.com/wsndshx/Paimon/module"
 	"github.com/wsndshx/Paimon/utils"
 )
 
@@ -15,43 +15,7 @@ func Private(message string, id int64) {
 	}
 	if message[:1] == "/" {
 		cmd := strings.Fields(message[1:])
-		errInt := 0
-		errStr := ""
-		isERR := false
-		switch cmd[0] {
-		case "cron":
-			switch cmd[1] {
-			case "list":
-				msg.Message = "目前包含的任务为: \n" + Timer.List()
-			case "remove":
-				errInt++
-				if len(cmd) != 3 {
-					errInt++
-					errStr = fmt.Sprintf("当前指令接受2个参数，却得到了%d个参数", len(cmd)-1)
-					break
-				}
-				// 删除任务
-				id, err := strconv.Atoi(cmd[2])
-				if err != nil {
-					isERR = true
-					errStr = "解析任务id时出错: " + err.Error()
-					errInt++
-				}
-				Timer.Remove(id)
-			default:
-				isERR = true
-			}
-			errInt++
-		default:
-			isERR = true
-		}
-		if isERR {
-			if errStr == "" {
-				errStr = "不存在指令" + cmd[errInt]
-			}
-			msg.Message = fmt.Sprintf("指令在位置%d上解析错误: %s", errInt, errStr)
-		}
-		msg.Reply()
+		module.Cmd(cmd, &msg, uint64(id))
 		return
 	}
 	// 私聊数据全部扔给ai处理
